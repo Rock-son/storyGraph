@@ -27,12 +27,12 @@ class HOC extends React.Component {
                   React.createElement('div', {className: 'row'}, null,
                      React.createElement('div', {className: 'boxContainer col-xs-offset-5 col-xs-2', style: boxStyle}, null,
                         React.createElement('div', {className: 'header col-xs-12', style: headerStyle}, 'Hello!'),
-                           React.createElement('div', {className: 'boxContent col-xs-12', style: contentStyle}, '- Yello!')
-                     ),
+                        React.createElement('div', {className: 'boxContent col-xs-12', style: contentStyle}, '- Yello!')
+                     )
                   ),
                   React.createElement('div', {className: 'row'}, null,
                     React.createElement('hr', {className: 'bootomLine col-xs-offset-5 col-xs-2', style: bottomLineStyle}, null),
-                       React.createElement('div', {className: 'sign col-xs-1', style: signStyle}, null),
+                    React.createElement('div', {className: 'sign col-xs-1', style: signStyle}, null)
                   )
                )
             )
