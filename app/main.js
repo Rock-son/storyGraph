@@ -1,33 +1,39 @@
 
-
-
-
-
-
-
-// TODO: HOC will not be a Component, but an empty container
-class HOC extends React.Component {
-    constructor() {
-        super();
-
-    }
-
-    render() {
-        var boxStyle = {height: '10em', padding: '0', backgrondColor: 'lightgrey', border: '1px solid blue', borderRadius: '15px'};
-        var headerStyle = {height: '2em', backgroundColor: 'blue', borderRadius: '15px 15px 0 0', borderBottom: '1px', 
+var headerComponent = function(props) {
+    var headerStyle = {height: '2em', backgroundColor: 'blue', borderRadius: '15px 15px 0 0', borderBottom: '1px', 
                            borderBottomColor: 'cyan', color: 'white'};
-        var contentStyle = {};
-        var bottomLineStyle = {width: '10px', transform: 'rotate(90deg)', borderTopColor: 'blue'}
-        var signStyle = {};
+    return (
+        React.createElement('div', {className: 'header col-xs-12', style: headerStyle}, props.header)
+    );
+};
 
-        // TODO: this will be a component (Box), called by HOC
-        return (
+var TextComponent = function(props) {
+    var boxStyle = {height: '10em', padding: '0', backgrondColor: 'lightgrey', border: '1px solid blue', borderRadius: '15px'};
+    return (
+        React.createElement('div', {className: 'boxContent col-xs-12', style: boxStyle}, props.content)
+    );
+};
+
+
+var BoxContainer = function(props) {
+    // TODO: extract content from state object!
+    var header = props.header,
+        content = props.content;
+
+     
+         
+         contentStyle = {},
+         bottomLineStyle = {width: '10px', transform: 'rotate(90deg)', borderTopColor: 'blue'},
+         signStyle = {};
+
+    return (
             React.createElement('div', {className: 'row'}, null,
                React.createElement('div', {className: 'container'}, null,
                   React.createElement('div', {className: 'row'}, null,
                      React.createElement('div', {className: 'boxContainer col-xs-offset-5 col-xs-2', style: boxStyle}, null,
-                        React.createElement('div', {className: 'header col-xs-12', style: headerStyle}, 'Hello!'),
-                        React.createElement('div', {className: 'boxContent col-xs-12', style: contentStyle}, '- Yello!')
+                        // COMPONENTS!
+                        React.createElement(headerComponent, {header: header}, null),
+                        React.createElement(TextComponent, {content: content}, null)
                      )
                   ),
                   React.createElement('div', {className: 'row'}, null,
@@ -36,6 +42,23 @@ class HOC extends React.Component {
                   )
                )
             )
+      );
+};
+
+
+
+class HOC extends React.Component {
+    constructor() {
+        super();
+        this.state = {tree: {}};
+    }
+    
+    // TODO: create array.map style of rendering
+    // this.state.object.map
+    render() {
+       
+        return (
+            React.createElement(BoxContainer, {}, null)
         );
     }
 }
@@ -44,9 +67,8 @@ class HOC extends React.Component {
 
 
 
+var context = {};
 
-
-
-document.addEventListener("DOMContentLoaded", function(event) {      
-    ReactDOM.render(React.createElement(HOC, null, null), document.getElementById('root'));
+document.addEventListener("DOMContentLoaded", function(event) {
+    ReactDOM.render(React.createElement(HOC, context, null), document.getElementById('root'));
 }); 
