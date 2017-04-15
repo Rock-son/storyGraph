@@ -60,8 +60,6 @@ class HOC extends React.Component {
 }
 
 
-var context = {header: "Hello", content: "- Yello!"};
-
 document.addEventListener("DOMContentLoaded", function(event) {
-    ReactDOM.render(React.createElement(HOC, context, null), document.getElementById('root'));
+    ReactDOM.render(React.createElement(HOC, {}, null), document.getElementById('root'));
 }); 
