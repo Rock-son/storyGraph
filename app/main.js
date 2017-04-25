@@ -16,27 +16,19 @@ var BoxContainer = function(props) {
     // TODO: extract content from state object!
     var header = props.header,
         content = props.content,
-        boxStyle = {height: '10em', padding: '0', backgrondColor: 'lightgrey', border: '1px solid blue', borderRadius: '15px'},
+        boxStyle = {top: props.x, left: props.y},
         contentStyle = {},
-        bottomLineStyle = {width: '10px', transform: 'rotate(90deg)', borderTopColor: 'blue'},
-        signStyle = {};
+        signStyle = {};        
 
-    return (
-            React.createElement('div', {className: 'row'}, null,
-               React.createElement('div', {className: 'container'}, null,
-                  React.createElement('div', {className: 'row'}, null,
+    return (React.createElement('div', null, null,
+                React.createElement('div', {className: 'row'}, null,
                      React.createElement('div', {className: 'boxContainer col-xs-offset-5 col-xs-2', style: boxStyle}, null,
                         // COMPONENTS!
-                        React.createElement(headerComponent, {header: header}, null),
-                        React.createElement(TextComponent, {content: content}, null)
+                        React.createElement(headerComponent, {header: header, className: 'header col-xs-12'}, null),
+                        React.createElement(TextComponent, {content: content, className: 'content col-xs-12'}, null)
                      )
-                  ),
-                  React.createElement('div', {className: 'row'}, null,
-                    React.createElement('hr', {className: 'bootomLine col-xs-offset-5 col-xs-2', style: bottomLineStyle}, null),
-                    React.createElement('div', {className: 'sign col-xs-1', style: signStyle}, null)
-                  )
-               )
-            )
+                 )
+            )            
       );
 };
 
@@ -45,21 +37,55 @@ var BoxContainer = function(props) {
 class HOC extends React.Component {
     constructor(props) {
         super(props);
-        // TODO: populate state object with all the data needed for a tree
-        this.state = {tree: {header: "Hello", content: "- Yello!"}};
+        this.state = {tree: this.props.stateObject};
     }
-    
-    // TODO: create array.map style of rendering
-    // this.state.object.map
+    handleDrag() {
+
+    }
+
     render() {
-       
+       console.log(this.state.tree);
         return (
-            React.createElement(BoxContainer, {header: this.state.tree.header, content: this.state.tree.content}, null)
+            React.createElement('div', {className: 'container'}, null,
+                this.state.tree.map(function(boxElemenet) {
+                    console.log(boxElemenet);
+                    return React.createElement(BoxContainer, {header: boxElemenet.header, content: boxElemenet.content, x: boxElemenet.position.x, y: boxElemenet.position.y}, null);
+                })
+            )
         );
     }
 }
 
+var stateObject = [
+    {
+        id: 0,
+        header:"header1", 
+        content: "option",
+        expanded: true,
+        position: {x: '10px', y: '10px'}
+     },
+     {
+        id: 1,
+        header:"row 1", 
+        content: "option 1",
+        expanded: true,
+        position: {x: '30px', y: '30px'}
+     }, 
+     { 
+        id: 2,
+        header:"row 1", 
+        content: "option 2",
+        expanded: true,
+        position: {x: '60px', y: '60px'}
+     }, 
+     { 
+        id: 3,
+        header:"row 1", 
+        content: "option 3",
+        expanded: true,
+        position: {x: '100px', y: '100px'}
+     }];
 
 document.addEventListener("DOMContentLoaded", function(event) {
-    ReactDOM.render(React.createElement(HOC, {}, null), document.getElementById('root'));
+    ReactDOM.render(React.createElement(HOC, {stateObject: stateObject}, null), document.getElementById('root'));
 }); 
