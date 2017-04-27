@@ -15,8 +15,6 @@ body {
     background-color: lightgrey;
     border: 1px solid blue;
     border-radius: 5px;
-    height: 100px;
-    width: 100px; 
     max-width: 300px;
     max-height: 300px;
     min-width: 120px;
@@ -31,7 +29,7 @@ body {
     color: black;
     cursor: pointer;
 }
-svg, line {
+svg, line, path {
     position: absolute;
     top: 200px;
     left: 500px;
