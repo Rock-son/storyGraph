@@ -3,19 +3,36 @@ body {
     color: white;
     overflow: auto;
 }
-
+.container {
+    width: 100vw;
+    min-height: 100vh;
+}
 .boxContainer {
     position: absolute;
     resize: both;
-    overflow: auto;
-    max-width: 300px;
-    max-height: 300px;
     padding: 0;
+    overflow: auto;
     background-color: lightgrey;
     border: 1px solid blue;
-    border-radius: 15px 15px 10px 15px;
-    height: '100px';
-    width: '100px'; 
-    max-width: '300px';
-    max-height: '300px';
+    border-radius: 5px;
+    height: 100px;
+    width: 100px; 
+    max-width: 300px;
+    max-height: 300px;
+    min-width: 120px;
+    min-height: 60px;
+}
+
+.header {    
+    cursor: move;
+}
+.content {
+    position: relative;
+    color: black;
+    cursor: pointer;
+}
+svg, line {
+    position: absolute;
+    top: 200px;
+    left: 500px;
 }
