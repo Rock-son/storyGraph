@@ -39,7 +39,7 @@ body {
 .header {
     position: relative;
     padding: 0 15px;
-    cursor: grab;
+    cursor: all-scroll;
     min-height: 1.7em;
     max-height: 20%;
     width: 100%;
@@ -64,4 +64,9 @@ body {
     color: blue;
     font-size: 1em;
     font-weight: 700;
+}
+.line {
+    position: absolute;
+    background-color: white;
+    color: white;
 }
