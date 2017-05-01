@@ -20,7 +20,7 @@ body {
     padding: 0;
     overflow: auto;
     resize: both;
-    background-color: lightgrey;
+  /*background-color: lightgrey;*/
     border: 1px solid blue;
     border-radius: 5px;
     max-width: 300px;
@@ -38,7 +38,7 @@ body {
 
 .header {
     position: relative;
-    padding: 0 15px;
+    padding: 0 0 0 15px;
     cursor: all-scroll;
     min-height: 1.7em;
     max-height: 20%;
@@ -69,4 +69,12 @@ body {
     position: absolute;
     background-color: white;
     color: white;
+}
+.closeBtn {
+    padding: 2px;
+    font-weight: 700;
+    border-radius: 2px;
+}
+.closeBtn:hover {
+    cursor: default;
 }

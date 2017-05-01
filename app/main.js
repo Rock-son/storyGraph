@@ -1,27 +1,31 @@
 'use strict'
-
+// CONNECTING LINE
 const lineComponent = function(props) {
     const lineStyle = {width: props.data.w, top: props.data.top, left: props.data.left,  msTransform: "rotate(" + props.data.deg + "deg)", 
                         WebkitTransform: "rotate(" + props.data.deg + "deg)", transform: "rotate(" + props.data.deg + "deg)"};
 
     return (
-        React.createElement('hr', {key: props.data.id, id: props.data.id, className: 'line', style: lineStyle}, null)
+        React.createElement('hr', {key: props.data.key, id: props.data.id, className: 'line', style: lineStyle}, null)
     );
 }
-
+// HEADER
 const headerComponent = function(props) {
-    const headerStyle = {backgroundColor: 'blue', borderBottom: '1px', 
-                           borderBottomColor: 'cyan', color: 'white'};
+    const headerStyle = {backgroundColor: 'blue', borderBottom: '1px', borderBottomColor: 'cyan', color: 'white'},
+          closeBtnStyle = {width: '17px', height: '15px', lineHeight: '8px', border: '1px outset white', color: 'white', 
+                            backgroundColor: 'red', float: 'right', margin: '5px 5px 0 0', paddingLeft: '3px'};
+
     return (
-        React.createElement('div', {className: props.className, onClick: props.lineConnect, style: headerStyle}, props.header)
+        React.createElement('div', {className: props.className, onClick: props.makeConnection, style: headerStyle}, props.header,
+            React.createElement('div', {className: 'closeBtn', style: closeBtnStyle}, 'x')
+        )
     );
 };
-
+// CONTENT
 const TextComponent = function(props) {    
     return React.createElement('div', {className: props.className}, props.content);
 };
 
-
+// BOX CONTAINER
 const BoxContainer = function(props) {
     // TODO: extract content from state object!
     const header = props.boxElement.header,
@@ -31,13 +35,13 @@ const BoxContainer = function(props) {
     return (React.createElement('div', {id: props.id, className: 'boxContainer', style: boxStyle, draggable: true, 
                                         onDragStart: props.dragStart, 
                                         onDragOver: props.dragOver,
-                                        onMouseUp: props.resize},
+                                        onMouseUp: props.resize,
+                                        onContextMenu: props.rightClick},
                 // HEADER, TEXT AND LINE COMPONENT!
-                React.createElement(headerComponent, {header: header, className: 'header col-xs-12', lineConnect: props.lineConnect}, null),
+                React.createElement(headerComponent, {header: header, className: 'header', makeConnection: props.makeConnection}, null),
                 React.createElement('div', {className: 'contentCont'},
-                    React.createElement(TextComponent, {content: content, className: 'content col-xs-12'}, null)),                  
-                React.createElement('div', {className: 'addHr', onDragStart: props.mouseUp, onClick: props.lineStart, title: 'Click to connect boxes!'},'+')
-
+                    React.createElement(TextComponent, {content: content, className: 'content'}, null)),                  
+                React.createElement('div', {className: 'addHr', onClick: props.connectionStart, title: 'Click to connect boxes!'},'+')
               )
      );
 };
@@ -50,28 +54,48 @@ class HOC extends React.Component {
         this.dragElementId = -1;
         this.dragElement = null;
         this.lineElement = null;
+        this.startingPos = null;
         this.position = {};
         this.state = {tree: this.props.elementsObject};
-        // for box dragging event listeners - but no need if not using "this" keyword inside
+        // for box dragging event listeners
         this.dragStart = this.dragStart.bind(this);
         this.dragOver = this.dragOver.bind(this);
         this.dragEnd = this.dragEnd.bind(this);        
         this.changeBoxSize = this.changeBoxSize.bind(this);
+        this.rightClick = this.rightClick.bind(this);
         // for connecting lines
-        this.lineStart = this.lineStart.bind(this);
-        this.lineConnect = this.lineConnect.bind(this);
+        this.connectionStart = this.connectionStart.bind(this);
+        this.makeConnection = this.makeConnection.bind(this);
+        this.calculateConnection = this.calculateConnection.bind(this);
+    }
+
+    // stops dragging the element and puts it back in the original position, TODO: context menu?
+    rightClick(e) {
+        if (this.dragElementId === -1 || this.startingPos == null) {
+            e.stopPropagation();
+            e.preventDefault();
+            return;
+        }
+        
+        this.setState({tree: Object.assign({}, this.state.tree, this.startingPos)});
+        e.stopPropagation();
+        e.preventDefault();
     }
 
     changeBoxSize(e) {
         e = e || window.event;        
         const id = parseInt(e.currentTarget.id),
-              header = this.state.tree[id].header,
-              content = this.state.tree[id].content,
-              expanded = this.state.tree[id].expanded,
-              position = this.state.tree[id].position,
+              el = this.state.tree[id],
+              parent = el.parent,
+              children = el.children,
+              header = el.header,
+              content = el.content,
+              expanded = el.expanded,
+              connections = el.connections,
+              position = el.position,
               newSize = {};
               
-        newSize[id] = {header, content, expanded, position, size: {w: e.currentTarget.style.width, h: e.currentTarget.style.height}};
+        newSize[id] = {id, parent, children, header, content, expanded, position, size: {w: e.currentTarget.style.width, h: e.currentTarget.style.height}, connections};
         this.setState({tree: Object.assign({}, this.state.tree, newSize)});
     }
 
@@ -84,6 +108,7 @@ class HOC extends React.Component {
         // calculate mouse offset points for punctual drop
         this.position.offsetX = e.pageX - parseInt(this.state.tree[this.dragElementId].position.x);
         this.position.offsetY = e.pageY - parseInt(this.state.tree[this.dragElementId].position.y);
+        this.startingPos = JSON.parse(JSON.stringify(this.state.tree));
     }
 
     dragOver(e) {
@@ -98,21 +123,24 @@ class HOC extends React.Component {
     dragEnd(e) {
         
         const id = this.dragElementId,
-              header = this.state.tree[id].header,
-              content = this.state.tree[id].content,
-              expanded = this.state.tree[id].expanded,
-              size = this.state.tree[id].size,
+              el = this.state.tree[id],
+              parent = el.parent,
+              children = el.children,
+              header = el.header,
+              content = el.content,
+              expanded = el.expanded,
+              size = el.size,
+              connections = el.connections,
               newPosition = {};
         
         this.dragElement = null;
-        newPosition[id] = {header, content, expanded, position: {x: this.position.x, y: this.position.y}, size};
-        this.setState({tree: Object.assign({}, this.state.tree, newPosition)});
- 
+        newPosition[id] = {id, parent, children, header, content, expanded, position: {x: this.position.x, y: this.position.y}, size, connections};
+        this.setState({tree: Object.assign({}, this.state.tree, newPosition)}); 
     }
-    // for plus sign event listener
-    lineStart(e) {
+
+    connectionStart(e) {
         e = e || window.event;
-        const currentElementid = parseInt(e.currentTarget.parentNode.id),
+        const currentElementId = parseInt(e.currentTarget.parentNode.id),
               previousElementId = this.lineElement == null ? -1 : parseInt(this.lineElement.id);
 
         // IF FIRST CLICK - opening the line connection
@@ -120,24 +148,43 @@ class HOC extends React.Component {
             this.lineElement = e.currentTarget.parentNode;
             this.lineElement.style.border = '3px solid green';
         // IF CLICKED ON THE SAME BOX AGAIN
-        } else if (currentElementid === previousElementId) {
+        } else if (currentElementId === previousElementId) {
             this.lineElement.style.border = '1px solid blue';
             this.lineElement = null;
         } 
     }
-    // for header event listener
-    lineConnect(e) {
+
+    makeConnection(e) {
         if (this.lineElement == null) {return;}
-        e = e || window.event;
-        alert('Connected!');
+        e = e || window.event;        
+
+        const id = parseInt(this.lineElement.id),
+              el = this.state.tree[id],  // parent
+              idConn = parseInt(e.currentTarget.parentNode.id),     // id from child element
+              returnedConnObj = this.calculateConnection(el, this.state.tree[idConn]);
+        let newConnection = {};
         this.lineElement.style.border = '1px solid blue';
-        this.lineElement = null;
+        this.lineElement = null; 
 
+        newConnection[id] = {id: el.id, parent: el.parent, children: el.children, header: el.header, content: el.content, expanded: el.expanded, position: el.position, size: el.size, connections: returnedConnObj};
+        //newConnection = Object.assign({}, newConnection, returnedConnObj); // adds or changes new connections
+        this.setState({tree: Object.assign({}, this.state.tree, newConnection)}); 
     }
-    onBoxHover(e) {
 
+    calculateConnection(el1, el2) {
+        
+        const el2_Id = parseInt(el2.id),
+              a = parseInt(el1.position.y) + parseInt(el1.size.h) - parseInt(el2.position.y),
+              b = parseInt(el1.position.x) + (parseInt(el1.size.w)/2) - parseInt(el2.position.x),
+              c = Math.round(Math.sqrt(Math.pow(Math.abs(a),2) + Math.pow(Math.abs(b), 2)));
+        let deg = Math.asin(Math.abs(b)/c);
+        deg = 90 - Math.round(deg * (180/Math.PI)); // convert from radians to degrees
+        
+        let connections = {};
 
-    }
+        connections[el2_Id] = {top: ((Math.abs(a) / 2) + parseInt(el1.position.y)  + parseInt(el1.size.h)) + 'px', left: (parseInt(el1.position.x) + (parseInt(el1.size.w)/2)) + 'px', w: c + 'px', deg: deg};
+        return connections;
+   }
 
     render() {
         let elementsArr = [];
@@ -150,13 +197,14 @@ class HOC extends React.Component {
                                                                         dragStart: this.dragStart,
                                                                         dragOver: this.dragOver, 
                                                                         resize: this.changeBoxSize,
-                                                                        lineStart: this.lineStart,
-                                                                        lineConnect: this.lineConnect}, null));
-                if (boxElement.lines == null) {
+                                                                        connectionStart: this.connectionStart,
+                                                                        makeConnection: this.makeConnection,
+                                                                        rightClick: this.rightClick}, null));
+                if (boxElement.connections == null) {
                     continue;
                 } else {
-                    for (const lineId in boxElement.lines) {
-                        elementsArr.push(React.createElement(lineComponent, {id: lineId, data: boxElement.lines[lineId]}, null));
+                    for (const connectionId in boxElement.connections) {
+                        elementsArr.push(React.createElement(lineComponent, {key: connectionId + '_', id: connectionId + '_', data: boxElement.connections[connectionId]}, null));
                     }
                 }
             }
@@ -170,42 +218,46 @@ var elementsObject = {
     0: {
         id: 0,
         parent: -1,
-        header:"header1", 
+        children: [],
+        header:"header0", 
         content: "option",
         expanded: true,
-        position: {x: '610px', y: '10px'},
+        position: {x: '700px', y: '50px'},
         size: {w: '100px', h: '100px'},
-        lines: {1000: {top: '110px', left: '660px', w: '100px', deg: 45}}
+        connections: {1: {top: '318px', left: '750px', w: '266px', deg: 32}}
      },
      1: {
         id: 1,
-        parent: -1,
-        header:"row 1", 
+        parent: 0,
+        children: [],
+        header:"header1", 
         content: "option 1",
         expanded: true,
-        position: {x: '470px', y: '110px'},
+        position: {x: '978px', y: '287px'},
         size: {w: '100px', h: '100px'},
-        lines: null
+        connections: null
      }, 
      2: { 
         id: 2,
         parent: -1,
-        header:"row 1", 
+        children: [],
+        header:"header2", 
         content: "option 2",
         expanded: true,
         position: {x: '360px', y: '260px'},
         size: {w: '100px', h: '100px'},
-        lines: null
+        connections: null
      }, 
      3: { 
         id: 3,
         parent: -1,
-        header:"row 1", 
+        children: [],
+        header:"header3", 
         content: 'option 3',
         expanded: true,
-        position: {x: '260px', y: '260px'},
+        position: {x: '250px', y: '260px'},
         size: {w: '100px', h: '100px'},
-        lines: null
+        connections: null
      }
 };
 
