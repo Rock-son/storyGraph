@@ -69,6 +69,10 @@ body {
     position: absolute;
     background-color: white;
     color: white;
+    height: 4px;
+}
+.line:hover {
+    cursor: pointer;
 }
 .closeBtn {
     padding: 2px;

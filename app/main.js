@@ -5,7 +5,7 @@ const lineComponent = function(props) {
                         WebkitTransform: "rotate(" + props.data.deg + "deg)", transform: "rotate(" + props.data.deg + "deg)"};
 
     return (
-        React.createElement('hr', {key: props.data.key, id: props.data.id, className: 'line', style: lineStyle}, null)
+        React.createElement('hr', { id: props.id, className: 'line', style: lineStyle}, null)
     );
 }
 // HEADER
@@ -56,7 +56,7 @@ class HOC extends React.Component {
         this.lineElement = null;
         this.startingPos = null;
         this.position = {};
-        this.state = {tree: this.props.elementsObject};
+        this.state = {tree: this.props.elementsObj, connections: this.props.connectionsObj};
         // for box dragging event listeners
         this.dragStart = this.dragStart.bind(this);
         this.dragOver = this.dragOver.bind(this);
@@ -91,11 +91,10 @@ class HOC extends React.Component {
               header = el.header,
               content = el.content,
               expanded = el.expanded,
-              connections = el.connections,
               position = el.position,
               newSize = {};
               
-        newSize[id] = {id, parent, children, header, content, expanded, position, size: {w: e.currentTarget.style.width, h: e.currentTarget.style.height}, connections};
+        newSize[id] = {id, parent, children, header, content, expanded, position, size: {w: e.currentTarget.style.width, h: e.currentTarget.style.height}};
         this.setState({tree: Object.assign({}, this.state.tree, newSize)});
     }
 
@@ -130,11 +129,10 @@ class HOC extends React.Component {
               content = el.content,
               expanded = el.expanded,
               size = el.size,
-              connections = el.connections,
               newPosition = {};
         
         this.dragElement = null;
-        newPosition[id] = {id, parent, children, header, content, expanded, position: {x: this.position.x, y: this.position.y}, size, connections};
+        newPosition[id] = {id, parent, children, header, content, expanded, position: {x: this.position.x, y: this.position.y}, size};
         this.setState({tree: Object.assign({}, this.state.tree, newPosition)}); 
     }
 
@@ -188,7 +186,7 @@ class HOC extends React.Component {
 
     render() {
         let elementsArr = [];
-        //events for boxContainers
+        //events for boxContainers - move it in WillComponentUpdate
         (() => {
             for (const key in this.state.tree) {
                  const boxElement = this.state.tree[key];
@@ -199,12 +197,20 @@ class HOC extends React.Component {
                                                                         resize: this.changeBoxSize,
                                                                         connectionStart: this.connectionStart,
                                                                         makeConnection: this.makeConnection,
-                                                                        rightClick: this.rightClick}, null));
-                if (boxElement.connections == null) {
-                    continue;
-                } else {
-                    for (const connectionId in boxElement.connections) {
-                        elementsArr.push(React.createElement(lineComponent, {key: connectionId + '_', id: connectionId + '_', data: boxElement.connections[connectionId]}, null));
+                                                                        rightClick: this.rightClick}, null));                
+            }
+            if (Object.keys(this.state.connections).length < 1) {return;}
+            for (const key in this.state.connections) {
+                for (const key_ in this.state.connections[key]) {
+                    for (const key__ in this.state.connections[key][key_]) {
+                        const id = key+key_+key__;
+                        //TODO: add event listeners!
+                        elementsArr.push(React.createElement(lineComponent, {key: id, 
+                                                                             id: id, 
+                                                                             data: this.state.connections[key][key_][key__]
+                                                                            }
+                                                            )
+                        )
                     }
                 }
             }
@@ -213,8 +219,18 @@ class HOC extends React.Component {
         return React.createElement('div', {className: 'container', onDragEnd: this.dragEnd, onDragOver: this.dragOver}, null, elementsArr);
     }
 }
+let connectionsObj = {
+    // id from parent and id from child
+    0: {
+        1: {
+            a: {top: '152px', left: '755px', w: '20px',  deg: 90},
+            b: {top: '162px', left: '765px', w: '100px', deg: 0},
+            c: {top: '212px', left: '815px', w: '100px', deg: 90}
+        }
+    }
+}
 
-var elementsObject = {
+let elementsObj = {
     0: {
         id: 0,
         parent: -1,
@@ -223,8 +239,7 @@ var elementsObject = {
         content: "option",
         expanded: true,
         position: {x: '700px', y: '50px'},
-        size: {w: '100px', h: '100px'},
-        connections: {1: {top: '318px', left: '750px', w: '266px', deg: 32}}
+        size: {w: '100px', h: '100px'}
      },
      1: {
         id: 1,
@@ -234,8 +249,7 @@ var elementsObject = {
         content: "option 1",
         expanded: true,
         position: {x: '978px', y: '287px'},
-        size: {w: '100px', h: '100px'},
-        connections: null
+        size: {w: '100px', h: '100px'}
      }, 
      2: { 
         id: 2,
@@ -245,8 +259,7 @@ var elementsObject = {
         content: "option 2",
         expanded: true,
         position: {x: '360px', y: '260px'},
-        size: {w: '100px', h: '100px'},
-        connections: null
+        size: {w: '100px', h: '100px'}
      }, 
      3: { 
         id: 3,
@@ -256,11 +269,11 @@ var elementsObject = {
         content: 'option 3',
         expanded: true,
         position: {x: '250px', y: '260px'},
-        size: {w: '100px', h: '100px'},
-        connections: null
+        size: {w: '100px', h: '100px'}
      }
 };
 
+
 document.addEventListener("DOMContentLoaded", function(e) {
-    ReactDOM.render(React.createElement(HOC, {elementsObject}, null), document.getElementById('root'));
+    ReactDOM.render(React.createElement(HOC, {elementsObj, connectionsObj}, null), document.getElementById('root'));
 }); 
