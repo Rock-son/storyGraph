@@ -20,13 +20,16 @@ body {
     padding: 0;
     overflow: auto;
     resize: both;
-  /*background-color: lightgrey;*/
-    border: 1px solid blue;
+  /* background-color: lightgrey;*/
     border-radius: 5px;
     max-width: 300px;
     max-height: 300px;
     min-width: 120px;
     min-height: 60px;
+    -webkit-transition: top, left 0.3s 0s;
+    -moz-transition: top, left 0.3s 0s;
+    -o-transition: top, left 0.3s 0s;
+    transition: all 0.3s 0s, border .1s;
 }
 .boxContainer-cont {
     position: relative;
@@ -52,7 +55,7 @@ body {
 .content {
     position: relative;
     padding: 0 15px;
-    color: black;
+    color: white;
     cursor: pointer;
     width: 100%;
 }
@@ -67,6 +70,7 @@ body {
 }
 .line {
     position: absolute;
+    z-index: 0;
     background-color: white;
     color: white;
     height: 4px;
