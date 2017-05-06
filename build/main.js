@@ -115,8 +115,7 @@ class HOC extends React.Component {
 
         if (newStateConnections[parentId] != null) {
             for (let key in newStateConnections[parentId]) {
-                const targetEl = newStateTree[key];
-                console.log(targetEl);
+                const targetEl = newStateTree[key];                
                 newStateConnections[parentId][key] = this.calculateConnection(parentEl, targetEl);
             }
         }

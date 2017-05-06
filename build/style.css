@@ -61,7 +61,9 @@ body {
 }
 .addHr {
     position: absolute;
-    margin-left: 50%;
+    margin-left: -webkit-calc(50% - 5px);
+    margin-left: -moz-calc(50% - 5px);
+    margin-left: calc(50% - 5px);
     cursor: pointer;
     bottom: 0;
     color: blue;
