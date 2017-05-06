@@ -215,16 +215,16 @@ class HOC extends React.Component {
         if (this.lineElement == null) {return;}
         e = e || window.event;
 
-        const newStateTree = this.deepClone(this.state.tree) || {},
-              newConnections = this.deepClone(this.state.connections) || {},
-              parentId = parseInt(this.lineElement.id),
+        let   newStateTree = this.deepClone(this.state.tree) || {},
+              newConnections = this.deepClone(this.state.connections) || {};
+        const parentId = parseInt(this.lineElement.id),
               parentEl = newStateTree[parentId],
               targetId = parseInt(e.currentTarget.parentNode.id),  
               targetEl = newStateTree[targetId],     
               calcConnObj = this.calculateConnection(parentEl, targetEl);
-
+              
         // update or add children
-        newStateTree[parentId].children =  newStateTree[parentId].children.indexOf(targetId) > -1 ? void 0 : newStateTree[parentId].children.push(targetId);
+        newStateTree[parentId].children.indexOf(targetId) > -1 ? void 0 : newStateTree[parentId].children.push(targetId);
         newStateTree[parentId].parent = parentId;
         // update or add connections
         newConnections[parentId] = newConnections[parentId] || {};
