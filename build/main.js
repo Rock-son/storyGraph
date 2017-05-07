@@ -5,7 +5,7 @@ const lineComponent = function(props) {
                         WebkitTransform: "rotate(" + props.data.deg + "deg)", transform: "rotate(" + props.data.deg + "deg)"};
 
     return (
-        React.createElement('hr', { id: props.id, className: 'line', style: lineStyle}, null)
+        React.createElement('hr', { id: props.id, className: 'line', style: lineStyle, onClick: props.onClick}, null)
     );
 }
 // HEADER
@@ -105,7 +105,7 @@ class HOC extends React.Component {
             e.preventDefault();
             return;
         } else {
-            this.setState({tree: this.deepClone(this.startingPos)});
+            this.setState({tree: (this.startingPos)});
             e.stopPropagation();
             e.preventDefault();
         }
@@ -120,7 +120,6 @@ class HOC extends React.Component {
               children = newStateTree[targetId].children,
               parents = newStateTree[targetId].parents;
         
-        console.log(newStateTree[targetId]);
         newStateTree[targetId].size = {width: e.currentTarget.getBoundingClientRect().width, height: e.currentTarget.getBoundingClientRect().height};
         children.forEach((childId) => {
             const targetEl = newStateTree[childId],
@@ -129,13 +128,11 @@ class HOC extends React.Component {
         });
         parents.forEach((parentId) => {
             const parentEl = newStateTree[parentId],
-                  childEl = newStateTree[targetId];
-                  console.log(parentEl.is, childEl.id);
+                  childEl = newStateTree[targetId];                  
             if (newStateConnections[parentId][targetId] != null) {
                 newStateConnections[parentId][targetId] = this.calculateConnection(parentEl, childEl, newStateTree);
             }            
         });
-        console.log(newStateConnections);
         this.setState({tree: newStateTree, connections: newStateConnections});
     }
     dragEnter(e) {
@@ -224,7 +221,7 @@ class HOC extends React.Component {
         this.setState({tree: newStateTree, connections: newStateConnections});
     }
     connectionStart(e) {
-        console.log('Connection started...');
+        
         e = e || window.event;
         const currentElementId = parseInt(e.currentTarget.parentNode.id),
               previousElementId = this.lineElement == null ? -1 : parseInt(this.lineElement.id),
@@ -290,7 +287,10 @@ class HOC extends React.Component {
                     deg: 90};
         return {a, b, c};
     }
-
+    lineClick(e) {
+        
+        alert(e.currentTarget.id.split('').map((val, index) => {return ['\n parent: ', '\n child: ', '\n property: '][index] + val;}).join(" "));
+    }
     render() {
         let elementsArr = [];
         //events for boxContainers - move it in WillComponentUpdate
@@ -320,7 +320,8 @@ class HOC extends React.Component {
                                     const id = key+key_+key__;
                                     //TODO: add event listeners!
                                     elementsArr.push(React.createElement(lineComponent, {key: id, 
-                                                                                        id: id, 
+                                                                                        id: id,
+                                                                                        onClick: this.lineClick.bind(this),
                                                                                         data: this.state.connections[key][key_][key__]
                                                                                     }
                                                                 )
@@ -336,7 +337,17 @@ class HOC extends React.Component {
         return React.createElement('div', {className: 'container', onDragEnd: this.dragEnd.bind(this), onDragOver: this.dragOver.bind(this)}, null, elementsArr);
     }
 }
-let connections = {};
+let connections = {
+    /*
+    0: {
+        1: {
+            a: {top: "150px", left: "250px", w: "20px", deg: 90},
+            b: {top: "250px", left: "150px", w: "200px", deg: 0},
+            c: {top: "350px", left: "170px", w: "220px", deg: 90}
+        }
+    }
+    */
+};
 
 let storage = {
     0: {
