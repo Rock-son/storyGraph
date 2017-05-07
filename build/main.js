@@ -30,8 +30,12 @@ const BoxContainer = function(props) {
     // TODO: extract content from state object!
     const header = props.boxElement.header,
           content = props.boxElement.content,
-          boxStyle = {top: props.boxElement.position.y, left: props.boxElement.position.x, width: props.boxElement.size.w, height: props.boxElement.size.h, border: props.boxElement.style.border};     
-    
+          { top, left } = props.boxElement.position,
+          { width, height } = props.boxElement.size,
+          { border } = props.boxElement.style,
+          
+          boxStyle = {top, left, width, height, border};
+          
     return (React.createElement('div', {id: props.id, className: 'boxContainer', style: boxStyle, draggable: true, 
                                         onDragStart: props.dragStart,
                                         onDragEnter: props.dragEnter,
@@ -42,7 +46,7 @@ const BoxContainer = function(props) {
                 // HEADER, TEXT AND LINE COMPONENT!
                 React.createElement(headerComponent, {header: header, className: 'header', completeConnection: props.completeConnection}, null),
                 React.createElement('div', {className: 'contentCont'},
-                    React.createElement(TextComponent, {content: content, className: 'content'}, null)),                  
+                    React.createElement(TextComponent, {content: content, className: 'content'}, null)),
                 React.createElement('div', {className: 'addHr', onClick: props.connectionStart, title: 'Click to connect boxes!'},'+')
               )
      );
@@ -57,6 +61,7 @@ class HOC extends React.Component {
         this.dragElement = null;
         this.lineElement = null;
         this.startingPos = null;
+        this.connectionOn = false;
         this.dropped = false;
         this.position = {};
         this.state = {tree: this.props.storage, connections: this.props.connections};
@@ -64,9 +69,11 @@ class HOC extends React.Component {
         this.connectionStart = this.connectionStart.bind(this);
         this.completeConnection = this.completeConnection.bind(this);
         this.calculateConnection = this.calculateConnection.bind(this);
+        this.changeBoxSize = this.changeBoxSize.bind(this);
         //helper functions
         this.deepClone = this.deepClone.bind(this);
     }
+
     deepClone(obj) {
         let newObj,
         i;
@@ -104,22 +111,31 @@ class HOC extends React.Component {
         }
     }
     changeBoxSize(e) {
-        
+        if ( this.dropped || this.connectionOn) {return;}
+
         e = e || window.event;
-        const parentId = parseInt(e.currentTarget.id),
+        const targetId = parseInt(e.currentTarget.id),
               newStateTree = this.deepClone(this.state.tree),
-              newStateConnections = this.deepClone(this.state.connections),
-              parentEl = newStateTree[parentId];
-
-        newStateTree[parentId].size = {w: e.currentTarget.getBoundingClientRect().width, h: e.currentTarget.getBoundingClientRect().height};
-
-        if (newStateConnections[parentId] != null) {
-            for (let key in newStateConnections[parentId]) {
-                const targetEl = newStateTree[key];                
-                newStateConnections[parentId][key] = this.calculateConnection(parentEl, targetEl);
-            }
-        }
+              newStateConnections = this.deepClone(this.state.connections),              
+              children = newStateTree[targetId].children,
+              parents = newStateTree[targetId].parents;
         
+        console.log(newStateTree[targetId]);
+        newStateTree[targetId].size = {width: e.currentTarget.getBoundingClientRect().width, height: e.currentTarget.getBoundingClientRect().height};
+        children.forEach((childId) => {
+            const targetEl = newStateTree[childId],
+                  parentEl = newStateTree[targetId];
+            newStateConnections[targetId][childId] = this.calculateConnection(parentEl, targetEl, newStateTree);
+        });
+        parents.forEach((parentId) => {
+            const parentEl = newStateTree[parentId],
+                  childEl = newStateTree[targetId];
+                  console.log(parentEl.is, childEl.id);
+            if (newStateConnections[parentId][targetId] != null) {
+                newStateConnections[parentId][targetId] = this.calculateConnection(parentEl, childEl, newStateTree);
+            }            
+        });
+        console.log(newStateConnections);
         this.setState({tree: newStateTree, connections: newStateConnections});
     }
     dragEnter(e) {
@@ -156,26 +172,24 @@ class HOC extends React.Component {
         this.dragElement = e.currentTarget;
         this.dropped = false;
         // calculate mouse offset points for punctual drop
-        this.position.offsetX = e.pageX - parseInt(this.state.tree[this.dragElementId].position.x);
-        this.position.offsetY = e.pageY - parseInt(this.state.tree[this.dragElementId].position.y);
+        this.position.offsetX = e.pageX - parseInt(this.state.tree[this.dragElementId].position.left);
+        this.position.offsetY = e.pageY - parseInt(this.state.tree[this.dragElementId].position.top);
         this.startingPos = this.deepClone(this.state.tree);
     }
     dragOver(e) {
         e = e || window.event;
         e.dataTransfer.dropEffect = 'move';
-
-        this.position.x = e.pageX - this.position.offsetX;
-        this.position.y = e.pageY - this.position.offsetY;        
-        e.stopPropagation();
         e.preventDefault();
+        this.position.left = e.pageX - this.position.offsetX;
+        this.position.top = e.pageY - this.position.offsetY;
     }
     //for switching boxContainers positions
     switchContainers(e) {
         const cloneState = this.deepClone(this.state.tree),
               draggedId = this.dragElementId,
               targetId = parseInt(e.currentTarget.id),
-              draggedPos = {x: cloneState[draggedId].position.x, y: cloneState[draggedId].position.y},
-              targetPos = {x: cloneState[targetId].position.x, y: cloneState[targetId].position.y};
+              draggedPos = {left: cloneState[draggedId].position.left, top: cloneState[draggedId].position.top},
+              targetPos = {left: cloneState[targetId].position.left, top: cloneState[targetId].position.top};
               
         cloneState[draggedId].position = targetPos;
         cloneState[targetId].position =  draggedPos;
@@ -184,34 +198,53 @@ class HOC extends React.Component {
         this.dragElement = null;
         this.setState({tree: cloneState});
     }
-    // for moving boxContainers elements 
+    // for moving boxContainers elements
     dragEnd(e) {
         if (this.dropped) {return;}
+        
+        const newStateTree = this.deepClone(this.state.tree),
+              newStateConnections = this.deepClone(this.state.connections),
+              targetId = this.dragElementId,
+              children = newStateTree[this.dragElementId].children,
+              parents = newStateTree[this.dragElementId].parents;
 
-        const cloneState = this.deepClone(this.state.tree);
-
-        cloneState[this.dragElementId].position = {x: this.position.x, y: this.position.y};
-
+        newStateTree[this.dragElementId].position = {left: this.position.left, top: this.position.top};
+        // update connections for concerning box containers (children and parents)
+        children.forEach((childId) => {
+            const targetEl = newStateTree[childId],
+                  parentEl = newStateTree[targetId];
+            newStateConnections[targetId][childId] = this.calculateConnection(parentEl, targetEl, newStateTree);
+        });
+        parents.forEach((parentId) => {
+            const parentEl = newStateTree[parentId],
+                  childEl = newStateTree[targetId];
+            newStateConnections[parentId][targetId] = this.calculateConnection(parentEl, childEl, newStateTree);
+        });
         this.dragElement = null;
-        this.setState({tree: cloneState});
+        this.setState({tree: newStateTree, connections: newStateConnections});
     }
     connectionStart(e) {
+        console.log('Connection started...');
         e = e || window.event;
         const currentElementId = parseInt(e.currentTarget.parentNode.id),
-              previousElementId = this.lineElement == null ? -1 : parseInt(this.lineElement.id);
+              previousElementId = this.lineElement == null ? -1 : parseInt(this.lineElement.id),
+              newStateTree = this.deepClone(this.state.tree);
+        this.connectionOn = true;
 
         // IF FIRST CLICK - opening the line connection
         if (previousElementId === -1) {
             this.lineElement = e.currentTarget.parentNode;
-            this.lineElement.style.border = '3px solid green';
+            newStateTree[parseInt(this.lineElement.id)].style = Object.assign({}, newStateTree[parseInt(this.lineElement.id)].style, {border: '3px solid green'});
         // IF CLICKED ON THE SAME BOX AGAIN
         } else if (currentElementId === previousElementId) {
-            this.lineElement.style.border = '1px solid blue';
+            newStateTree[parseInt(this.lineElement.id)].style = Object.assign({}, newStateTree[parseInt(this.lineElement.id)].style, {border: '1px solid blue'});
             this.lineElement = null;
         } 
+        this.setState({tree: newStateTree});
     }
     completeConnection(e) {
-        if (this.lineElement == null) {return;}
+        
+        if (this.lineElement == null || parseInt(this.lineElement.id) === parseInt(e.currentTarget.parentNode.id)) {return;}
         e = e || window.event;
 
         let   newStateTree = this.deepClone(this.state.tree) || {},
@@ -220,27 +253,27 @@ class HOC extends React.Component {
               parentEl = newStateTree[parentId],
               targetId = parseInt(e.currentTarget.parentNode.id),  
               targetEl = newStateTree[targetId],     
-              calcConnObj = this.calculateConnection(parentEl, targetEl);
+              calcConnectionsObj = this.calculateConnection(parentEl, targetEl);
               
         // update or add children
         newStateTree[parentId].children.indexOf(targetId) > -1 ? void 0 : newStateTree[parentId].children.push(targetId);
-        newStateTree[parentId].parent = parentId;
+        newStateTree[targetId].parents.indexOf(parentId) > -1 ? void 0 : newStateTree[targetId].parents.push(parentId);
         // update or add connections
         newConnections[parentId] = newConnections[parentId] || {};
-        newConnections[parentId][targetId] = calcConnObj;
+        newConnections[parentId][targetId] = calcConnectionsObj;
         // change border to normal        
-        this.lineElement.style.border = '1px solid blue';
+        newStateTree[parseInt(this.lineElement.id)].style = Object.assign({}, newStateTree[parseInt(this.lineElement.id)].style, {border: '1px solid blue'});
         this.lineElement = null;
+        this.connectionOn = false;
+
         this.setState({tree: newStateTree, connections: newConnections});
     }
-    calculateConnection(parent, target) {
-        
-        const parentEl = document.getElementById(parent.id + '_'),
-              parentRect = parentEl.getBoundingClientRect(),
-              targetEl = document.getElementById(target.id + '_'),
-              targetRect = targetEl.getBoundingClientRect(),
+    calculateConnection(parent, target, newStateTree = this.state.tree) {
+
+        const parentRect = Object.assign({}, newStateTree[parent.id].position, newStateTree[parent.id].size),
+              targetRect = Object.assign({}, newStateTree[target.id].position, newStateTree[target.id].size),
               aLen = 20,
-              bLen = - parseInt(parentRect.left) + parseInt(targetRect.left),
+              bLen = - (parseInt(parentRect.left) + (parseInt(parentRect.width) / 2)) + (parseInt(targetRect.left) + (parseInt(targetRect.width) / 2)),
               cLen = - (parseInt(parentRect.top) + parseInt(parentRect.height) + aLen) + parseInt(targetRect.top),
 
               a = { top:  (parseInt(parentRect.top) + parseInt(parentRect.height)) + 'px',
@@ -249,13 +282,12 @@ class HOC extends React.Component {
                     deg: 90 },
               b = { top:  (parseInt(parentRect.top) + parseInt(parentRect.height) + (aLen / 2)) + 'px',
                     left: (parseInt(parentRect.left) + (parseInt(parentRect.width) / 2) + (bLen < 0 ? bLen : 0)) + 'px',
-                    w: Math.abs(bLen) + 'px',
+                    w: (Math.abs(bLen) + 2) + 'px',
                     deg: 0},
               c = { top:  (parseInt(parentRect.top) + parseInt(parentRect.height) + (aLen/2) + (cLen / 2)) + 'px',
-                    left: (parseInt(b.left) + ((bLen < 0 ? 0 : bLen)) - (cLen / 2)) + 'px',
-                    w: Math.abs(cLen) + 'px',
+                    left: (parseInt(b.left) + ((bLen < 0 ? 0 : bLen)) - (cLen < 0 ? (-cLen/2) : (cLen/2))) + 'px',
+                    w: (Math.abs(cLen)) + 'px',
                     deg: 90};
-                    
         return {a, b, c};
     }
 
@@ -264,30 +296,38 @@ class HOC extends React.Component {
         //events for boxContainers - move it in WillComponentUpdate
         (() => {
             for (const key in this.state.tree) {
-                 const boxElement = this.state.tree[key];
-                 elementsArr.push(React.createElement(BoxContainer, {key: key, id: key + '_', 
-                                                                     boxElement: boxElement, 
-                                                                     dragStart: this.dragStart.bind(this),
-                                                                     dragEnter: this.dragEnter.bind(this),
-                                                                     dragLeave: this.dragLeave.bind(this),
-                                                                     dragDrop: this.switchContainers.bind(this),
-                                                                     resize: this.changeBoxSize.bind(this),
-                                                                     connectionStart: this.connectionStart.bind(this),
-                                                                     completeConnection: this.completeConnection.bind(this),
-                                                                     rightClick: this.rightClick.bind(this)}, null));                
+                 if (this.state.tree.hasOwnProperty(key)) {
+                    const boxElement = this.state.tree[key];
+                    elementsArr.push(React.createElement(BoxContainer, {key: key, id: key + '_', 
+                                                                        boxElement: boxElement, 
+                                                                        dragStart: this.dragStart.bind(this),
+                                                                        dragEnter: this.dragEnter.bind(this),
+                                                                        dragLeave: this.dragLeave.bind(this),
+                                                                        dragDrop: this.switchContainers.bind(this),
+                                                                        resize: this.changeBoxSize.bind(this),
+                                                                        connectionStart: this.connectionStart.bind(this),
+                                                                        completeConnection: this.completeConnection.bind(this),
+                                                                        rightClick: this.rightClick.bind(this)}, null));
+                 }
             }
             if (Object.keys(this.state.connections).length < 1) {return;}
             for (const key in this.state.connections) {
-                for (const key_ in this.state.connections[key]) {
-                    for (const key__ in this.state.connections[key][key_]) {
-                        const id = key+key_+key__;
-                        //TODO: add event listeners!
-                        elementsArr.push(React.createElement(lineComponent, {key: id, 
-                                                                             id: id, 
-                                                                             data: this.state.connections[key][key_][key__]
-                                                                            }
-                                                            )
-                        )
+                if (this.state.connections.hasOwnProperty(key)) {
+                    for (const key_ in this.state.connections[key]) {
+                        if (this.state.connections[key].hasOwnProperty(key_)) {
+                            for (const key__ in this.state.connections[key][key_]) {
+                                if (this.state.connections[key][key_].hasOwnProperty(key__)) {
+                                    const id = key+key_+key__;
+                                    //TODO: add event listeners!
+                                    elementsArr.push(React.createElement(lineComponent, {key: id, 
+                                                                                        id: id, 
+                                                                                        data: this.state.connections[key][key_][key__]
+                                                                                    }
+                                                                )
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -301,51 +341,51 @@ let connections = {};
 let storage = {
     0: {
         id: 0,
-        parent: -1,
+        parents: [],
         children: [],
         header:"header0", 
         content: "option",
         expanded: true,
         type: "",
         style: {border: '1px solid blue'},
-        position: {x: '700px', y: '50px'},
-        size: {w: '120px', h: '100px'}
+        position: {left: '700px', top: '50px'},
+        size: {width: '120px', height: '100px'}
      },
      1: {
         id: 1,
-        parent: 0,
+        parents: [],
         children: [],
         header:"header1", 
         content: "option 1",
         type: "",
         style: {border: '1px solid blue'},
         expanded: true,
-        position: {x: '978px', y: '287px'},
-        size: {w: '120px', h: '100px'}
+        position: {left: '978px', top: '287px'},
+        size: {width: '120px', height: '100px'}
      }, 
      2: { 
         id: 2,
-        parent: -1,
+        parents: [],
         children: [],
         header:"header2", 
         content: "option 2",
         type: "",
         style: {border: '1px solid blue'},
         expanded: true,
-        position: {x: '390px', y: '260px'},
-        size: {w: '120px', h: '100px'}
+        position: {left: '390px', top: '260px'},
+        size: {width: '120px', height: '100px'}
      }, 
      3: { 
         id: 3,
-        parent: -1,
+        parents: [],
         children: [],
         header:"header3", 
         content: 'option 3',
         type: "",
         style: {border: '1px solid blue'},
         expanded: true,
-        position: {x: '250px', y: '260px'},
-        size: {w: '120px', h: '100px'}
+        position: {left: '250px', top: '260px'},
+        size: {width: '120px', height: '100px'}
      }
 };
 

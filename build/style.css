@@ -17,6 +17,7 @@ body {
 }
 .boxContainer {
     position: absolute;
+    z-index: 1;
     padding: 0;
     overflow: auto;
     resize: both;
@@ -30,13 +31,6 @@ body {
     -moz-transition: top, left 0.3s 0s;
     -o-transition: top, left 0.3s 0s;
     transition: all 0.3s 0s, border .1s;
-}
-.boxContainer-cont {
-    position: relative;
-    height: -webkit-calc(100% - 10px);
-    height: -moz-calc(100% - 10px);
-    height: calc(100% - 10px);    
-    width: 100%;
 }
 
 .header {
@@ -76,6 +70,10 @@ body {
     background-color: white;
     color: white;
     height: 4px;
+    -webkit-transition: top, left 0.3s 0s;
+    -moz-transition: top, left 0.3s 0s;
+    -o-transition: top, left 0.3s 0s;
+    transition: all 0.3s 0s;
 }
 .line:hover {
     cursor: pointer;
