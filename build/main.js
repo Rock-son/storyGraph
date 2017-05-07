@@ -106,7 +106,7 @@ class HOC extends React.Component {
         this.setState({tree: Object.assign({}, this.startingPos), connections: Object.assign({},this.startingConn)});
     }
     changeBoxSize(e) {
-        if ( this.dropped || this.connectionOn) {return;}
+        if (this.connectionOn) {return;}
 
         e = e || window.event;
         const targetId = parseInt(e.currentTarget.id),
@@ -181,23 +181,15 @@ class HOC extends React.Component {
     //for switching boxContainers positions
     switchContainers(e) {
         const cloneState = this.deepClone(this.state.tree),
-              cloneStateTarget = this.deepClone(this.state.tree),
-              cloneStateParent = this.deepClone(this.state.tree),
+              cloneState_ = this.deepClone(this.state.tree),
               draggedId = this.dragElementId,
               targetId = parseInt(e.currentTarget.id);
-        
-        cloneStateTarget[targetId] = Object.assign({}, cloneState[targetId], {header: cloneState[draggedId].header, content: cloneState[draggedId].content});
-        cloneStateParent[draggedId] = Object.assign({}, cloneState[draggedId], {header: cloneState[targetId].header, content: cloneState[targetId].content});
 
-        cloneState[targetId] = Object.assign({}, cloneStateParent[draggedId]);
-        cloneState[draggedId] = Object.assign({}, cloneStateTarget[targetId]);
-
-
-
-        console.log('AFTER: \nparent: ', cloneState[draggedId], '\n target: ', cloneState[targetId] );
+        cloneState_[targetId] = Object.assign({}, cloneState[targetId], {header: cloneState[draggedId].header, content: cloneState[draggedId].content});
+        cloneState_[draggedId] = Object.assign({}, cloneState[draggedId], {header: cloneState[targetId].header, content: cloneState[targetId].content});
         this.dropped = true;
         this.dragElement = null;
-        this.setState({tree: cloneState});
+        this.setState({tree: Object.assign({}, cloneState, cloneState_)});
     }
     // for moving boxContainers elements
     dragEnd(e) {
