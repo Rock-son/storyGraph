@@ -41,8 +41,7 @@ const BoxContainer = function(props) {
                                         onDragEnter: props.dragEnter,
                                         onDragLeave: props.dragLeave,
                                         onDrop: props.dragDrop,
-                                        onMouseUp: props.resize,
-                                        onContextMenu: props.rightClick},
+                                        onMouseUp: props.changeBoxSize},
                 // HEADER, TEXT AND LINE COMPONENT!
                 React.createElement(headerComponent, {header: header, className: 'header', completeConnection: props.completeConnection}, null),
                 React.createElement('div', {className: 'contentCont'},
@@ -61,17 +60,14 @@ class HOC extends React.Component {
         this.dragElement = null;
         this.lineElement = null;
         this.startingPos = null;
+        this.startingConn = null;
         this.connectionOn = false;
         this.dropped = false;
         this.position = {};
         this.state = {tree: this.props.storage, connections: this.props.connections};
-        // for connecting lines
-        this.connectionStart = this.connectionStart.bind(this);
-        this.completeConnection = this.completeConnection.bind(this);
-        this.calculateConnection = this.calculateConnection.bind(this);
-        this.changeBoxSize = this.changeBoxSize.bind(this);
         //helper functions
         this.deepClone = this.deepClone.bind(this);
+        this.calculateConnection = this.calculateConnection.bind(this);
     }
 
     deepClone(obj) {
@@ -104,11 +100,10 @@ class HOC extends React.Component {
             e.stopPropagation();
             e.preventDefault();
             return;
-        } else {
-            this.setState({tree: (this.startingPos)});
-            e.stopPropagation();
-            e.preventDefault();
-        }
+        } 
+        e.stopPropagation();
+        e.preventDefault();
+        this.setState({tree: Object.assign({}, this.startingPos), connections: Object.assign({},this.startingConn)});
     }
     changeBoxSize(e) {
         if ( this.dropped || this.connectionOn) {return;}
@@ -124,16 +119,38 @@ class HOC extends React.Component {
         children.forEach((childId) => {
             const targetEl = newStateTree[childId],
                   parentEl = newStateTree[targetId];
-            newStateConnections[targetId][childId] = this.calculateConnection(parentEl, targetEl, newStateTree);
+            if (newStateConnections[targetId][childId] != null) {
+                newStateConnections[targetId][childId] = Object.assign({}, this.state.connections[targetId][childId], this.calculateConnection(parentEl, targetEl, newStateTree));
+            }
         });
         parents.forEach((parentId) => {
             const parentEl = newStateTree[parentId],
                   childEl = newStateTree[targetId];                  
             if (newStateConnections[parentId][targetId] != null) {
-                newStateConnections[parentId][targetId] = this.calculateConnection(parentEl, childEl, newStateTree);
+                newStateConnections[parentId][targetId] = Object.assign({}, this.state.connections[parentId][targetId], this.calculateConnection(parentEl, childEl, newStateTree));
             }            
         });
-        this.setState({tree: newStateTree, connections: newStateConnections});
+        this.setState({tree: Object.assign({}, newStateTree), connections: Object.assign({}, newStateConnections)});
+    }
+    dragStart(e) {
+        e = e || window.event;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData("text/html", e.currentTarget);   // Firefox requires calling dataTransfer.setData for the drag to properly work
+        this.dragElementId = parseInt(e.currentTarget.id);
+        this.dragElement = e.currentTarget;
+        this.dropped = false;
+        // calculate mouse offset points for punctual drop
+        this.position.offsetX = e.pageX - parseInt(this.state.tree[this.dragElementId].position.left);
+        this.position.offsetY = e.pageY - parseInt(this.state.tree[this.dragElementId].position.top);
+        this.startingPos = this.deepClone(this.state.tree);
+        this.startingConn = this.deepClone(this.state.connections);
+    }
+    dragOver(e) {
+        e = e || window.event;
+        e.dataTransfer.dropEffect = 'move';
+        e.preventDefault();
+        this.position.left = e.pageX - this.position.offsetX;
+        this.position.top = e.pageY - this.position.offsetY;
     }
     dragEnter(e) {
         e = e || window.event;
@@ -143,7 +160,7 @@ class HOC extends React.Component {
         if (targetId === this.dragElementId) {return;}
 
         const cloneState = this.deepClone(this.state.tree);
-        cloneState[targetId].style = Object.assign({}, cloneState[targetId].style, {border: '3px solid green'});
+        cloneState[targetId].style = Object.assign({}, this.state.tree[targetId].style, {border: '3px solid green'});
         
         this.setState({tree: cloneState});
     }
@@ -161,36 +178,23 @@ class HOC extends React.Component {
 
         this.setState({tree: cloneState});
     }
-    dragStart(e) {
-        e = e || window.event;
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData("text/html", e.currentTarget);   // Firefox requires calling dataTransfer.setData for the drag to properly work
-        this.dragElementId = parseInt(e.currentTarget.id);
-        this.dragElement = e.currentTarget;
-        this.dropped = false;
-        // calculate mouse offset points for punctual drop
-        this.position.offsetX = e.pageX - parseInt(this.state.tree[this.dragElementId].position.left);
-        this.position.offsetY = e.pageY - parseInt(this.state.tree[this.dragElementId].position.top);
-        this.startingPos = this.deepClone(this.state.tree);
-    }
-    dragOver(e) {
-        e = e || window.event;
-        e.dataTransfer.dropEffect = 'move';
-        e.preventDefault();
-        this.position.left = e.pageX - this.position.offsetX;
-        this.position.top = e.pageY - this.position.offsetY;
-    }
     //for switching boxContainers positions
     switchContainers(e) {
         const cloneState = this.deepClone(this.state.tree),
+              cloneStateTarget = this.deepClone(this.state.tree),
+              cloneStateParent = this.deepClone(this.state.tree),
               draggedId = this.dragElementId,
-              targetId = parseInt(e.currentTarget.id),
-              draggedPos = {left: cloneState[draggedId].position.left, top: cloneState[draggedId].position.top},
-              targetPos = {left: cloneState[targetId].position.left, top: cloneState[targetId].position.top};
-              
-        cloneState[draggedId].position = targetPos;
-        cloneState[targetId].position =  draggedPos;
-        cloneState[targetId].style =  Object.assign({}, cloneState[targetId].style, {border: '1px solid blue'});
+              targetId = parseInt(e.currentTarget.id);
+        
+        cloneStateTarget[targetId] = Object.assign({}, cloneState[targetId], {header: cloneState[draggedId].header, content: cloneState[draggedId].content});
+        cloneStateParent[draggedId] = Object.assign({}, cloneState[draggedId], {header: cloneState[targetId].header, content: cloneState[targetId].content});
+
+        cloneState[targetId] = Object.assign({}, cloneStateParent[draggedId]);
+        cloneState[draggedId] = Object.assign({}, cloneStateTarget[targetId]);
+
+
+
+        console.log('AFTER: \nparent: ', cloneState[draggedId], '\n target: ', cloneState[targetId] );
         this.dropped = true;
         this.dragElement = null;
         this.setState({tree: cloneState});
@@ -304,7 +308,7 @@ class HOC extends React.Component {
                                                                         dragEnter: this.dragEnter.bind(this),
                                                                         dragLeave: this.dragLeave.bind(this),
                                                                         dragDrop: this.switchContainers.bind(this),
-                                                                        resize: this.changeBoxSize.bind(this),
+                                                                        changeBoxSize: this.changeBoxSize.bind(this),
                                                                         connectionStart: this.connectionStart.bind(this),
                                                                         completeConnection: this.completeConnection.bind(this),
                                                                         rightClick: this.rightClick.bind(this)}, null));
@@ -334,7 +338,7 @@ class HOC extends React.Component {
             }
         })();
 
-        return React.createElement('div', {className: 'container', onDragEnd: this.dragEnd.bind(this), onDragOver: this.dragOver.bind(this)}, null, elementsArr);
+        return React.createElement('div', {className: 'container', onDragEnd: this.dragEnd.bind(this), onDragOver: this.dragOver.bind(this), onContextMenu: this.rightClick.bind(this)}, null, elementsArr);
     }
 }
 let connections = {
