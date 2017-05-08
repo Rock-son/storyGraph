@@ -103,7 +103,7 @@ class HOC extends React.Component {
         } 
         e.stopPropagation();
         e.preventDefault();
-        this.setState({tree: Object.assign({}, this.startingPos), connections: Object.assign({},this.startingConn)});
+        this.setState({tree: Object.assign({}, this.startingPos), connections: Object.assign({}, this.startingConn)});
     }
     changeBoxSize(e) {
         if (this.connectionOn) {return;}
@@ -117,10 +117,10 @@ class HOC extends React.Component {
         
         newStateTree[targetId].size = {width: e.currentTarget.getBoundingClientRect().width, height: e.currentTarget.getBoundingClientRect().height};
         children.forEach((childId) => {
-            const targetEl = newStateTree[childId],
-                  parentEl = newStateTree[targetId];
+            const parentEl = newStateTree[targetId],
+                  childEl = newStateTree[childId];
             if (newStateConnections[targetId][childId] != null) {
-                newStateConnections[targetId][childId] = Object.assign({}, this.state.connections[targetId][childId], this.calculateConnection(parentEl, targetEl, newStateTree));
+                newStateConnections[targetId][childId] = Object.assign({}, this.state.connections[targetId][childId], this.calculateConnection(parentEl, childEl, newStateTree));
             }
         });
         parents.forEach((parentId) => {
@@ -180,12 +180,13 @@ class HOC extends React.Component {
     }
     //for switching boxContainers positions
     switchContainers(e) {
+        
         const cloneState = this.deepClone(this.state.tree),
               cloneState_ = this.deepClone(this.state.tree),
               draggedId = this.dragElementId,
               targetId = parseInt(e.currentTarget.id);
-
-        cloneState_[targetId] = Object.assign({}, cloneState[targetId], {header: cloneState[draggedId].header, content: cloneState[draggedId].content});
+              
+        cloneState_[targetId] = Object.assign({}, cloneState[targetId], {header: cloneState[draggedId].header, content: cloneState[draggedId].content, style: {border: '1px solid blue'}});
         cloneState_[draggedId] = Object.assign({}, cloneState[draggedId], {header: cloneState[targetId].header, content: cloneState[targetId].content});
         this.dropped = true;
         this.dragElement = null;
