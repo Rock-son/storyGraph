@@ -1,11 +1,16 @@
 'use strict'
+// POSTSCRIPT
+
 // CONNECTING LINE
 const lineComponent = function(props) {
     const lineStyle = {width: props.data.w, top: props.data.top, left: props.data.left,  msTransform: "rotate(" + props.data.deg + "deg)", 
-                        WebkitTransform: "rotate(" + props.data.deg + "deg)", transform: "rotate(" + props.data.deg + "deg)"};
-
-    return (
-        React.createElement('hr', { id: props.id, className: 'line', style: lineStyle, onClick: props.onClick}, null)
+                        WebkitTransform: "rotate(" + props.data.deg + "deg)", transform: "rotate(" + props.data.deg + "deg)"},
+          popupStyle = {display: props.popup === props.id  ? 'block' : 'none', top: (parseInt(props.data.top) + 10) + 'px', left: (parseInt(props.data.left) + 10) + 'px'};
+    
+    return (React.createElement('div', null, null,
+                React.createElement('hr', { id: props.id, className: 'line', style: lineStyle, onClick: props.onLineClick}, null),
+                React.createElement('div', {data: props.id, className: 'line-popup', style: popupStyle, onClick: props.onPopupClick}, 'DELETE, DESCRIBE')
+            )
     );
 }
 // HEADER
@@ -58,13 +63,14 @@ class HOC extends React.Component {
         super(props);
         this.dragElementId = -1;
         this.dragElement = null;
-        this.lineElement = null;
+        this.lineElement = null;        
         this.startingPos = null;
         this.startingConn = null;
         this.connectionOn = false;
+        this.popupDisplay = false;
         this.dropped = false;
         this.position = {};
-        this.state = {tree: this.props.storage, connections: this.props.connections};
+        this.state = {tree: this.props.storage, connections: this.props.connections, popup: ''};
         //helper functions
         this.deepClone = this.deepClone.bind(this);
         this.calculateConnection = this.calculateConnection.bind(this);
@@ -104,6 +110,12 @@ class HOC extends React.Component {
         e.stopPropagation();
         e.preventDefault();
         this.setState({tree: Object.assign({}, this.startingPos), connections: Object.assign({}, this.startingConn)});
+    }
+    linePopup(e) {
+        e = e || window.event;
+        console.log(e.currentTarget.data);
+        this.setState({popup: ''});
+
     }
     changeBoxSize(e) {
         if (this.connectionOn) {return;}
@@ -175,7 +187,7 @@ class HOC extends React.Component {
 
         const cloneState = this.deepClone(this.state.tree);
         cloneState[targetId].style = Object.assign({}, cloneState[targetId].style, {border: '1px solid blue'});
-
+        this.lineElement = null;
         this.setState({tree: cloneState});
     }
     //for switching boxContainers positions
@@ -285,8 +297,11 @@ class HOC extends React.Component {
         return {a, b, c};
     }
     lineClick(e) {
-        
-        alert(e.currentTarget.id.split('').map((val, index) => {return ['\n parent: ', '\n child: ', '\n property: '][index] + val;}).join(" "));
+        e.preventDefault();
+        e.stopPropagation();
+        this.setState({popup: e.target.id});
+
+        //alert(e.currentTarget.id.split('').map((val, index) => {return ['\n parent: ', '\n child: ', '\n property: '][index] + val;}).join(" "));
     }
     render() {
         let elementsArr = [];
@@ -318,8 +333,10 @@ class HOC extends React.Component {
                                     //TODO: add event listeners!
                                     elementsArr.push(React.createElement(lineComponent, {key: id, 
                                                                                         id: id,
-                                                                                        onClick: this.lineClick.bind(this),
-                                                                                        data: this.state.connections[key][key_][key__]
+                                                                                        onLineClick: this.lineClick.bind(this),
+                                                                                        onPopupClick: this.linePopup.bind(this),
+                                                                                        data: this.state.connections[key][key_][key__],
+                                                                                        popup: this.state.popup
                                                                                     }
                                                                 )
                                     )
@@ -353,6 +370,7 @@ let storage = {
         children: [],
         header:"header0", 
         content: "option",
+        postscript: "",
         expanded: true,
         type: "",
         style: {border: '1px solid blue'},
@@ -365,9 +383,10 @@ let storage = {
         children: [],
         header:"header1", 
         content: "option 1",
+        postscript: "",
+        expanded: true,
         type: "",
         style: {border: '1px solid blue'},
-        expanded: true,
         position: {left: '978px', top: '287px'},
         size: {width: '120px', height: '100px'}
      }, 
@@ -377,9 +396,10 @@ let storage = {
         children: [],
         header:"header2", 
         content: "option 2",
+        postscript: "",
+        expanded: true,
         type: "",
         style: {border: '1px solid blue'},
-        expanded: true,
         position: {left: '390px', top: '260px'},
         size: {width: '120px', height: '100px'}
      }, 
@@ -389,9 +409,10 @@ let storage = {
         children: [],
         header:"header3", 
         content: 'option 3',
+        postscript: "",
+        expanded: true,
         type: "",
         style: {border: '1px solid blue'},
-        expanded: true,
         position: {left: '250px', top: '260px'},
         size: {width: '120px', height: '100px'}
      }

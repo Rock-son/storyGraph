@@ -6,7 +6,6 @@
 
 body {
     background-color: black;
-    color: white;
     overflow: auto;
     font-size: 14px;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
@@ -74,6 +73,19 @@ body {
     -moz-transition: top, left 0.3s 0s;
     -o-transition: top, left 0.3s 0s;
     transition: all 0.3s 0s;
+}
+.line-popup {
+    position: absolute;
+    padding: auto;
+    width: 100px;
+    height: auto;
+    font-weight: 700;
+    color: rbga(0,0,0,.8);
+    text-align: left;
+    padding: 5px;
+    border-radius: 3px;
+    cursor: pointer;
+    background-color: white;
 }
 .line:hover {
     cursor: pointer;
