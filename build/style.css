@@ -66,9 +66,9 @@ body {
 .line {
     position: absolute;
     z-index: 0;
+    height: 5px;
     background-color: white;
-    color: white;
-    height: 4px;
+    cursor: pointer;
     -webkit-transition: top, left 0.3s 0s;
     -moz-transition: top, left 0.3s 0s;
     -o-transition: top, left 0.3s 0s;
@@ -76,16 +76,25 @@ body {
 }
 .line-popup {
     position: absolute;
-    padding: auto;
-    width: 100px;
+    width: 75px;
     height: auto;
     font-weight: 700;
-    color: rbga(0,0,0,.8);
-    text-align: left;
-    padding: 5px;
+    font-variant: all-petite-caps;
+    color: rbga(0, 0, 0, .8);
+    padding: 2px 5px;
     border-radius: 3px;
-    cursor: pointer;
     background-color: white;
+    -webkit-transition: top, left 0.3s 0s;
+    -moz-transition: top, left 0.3s 0s;
+    -o-transition: top, left 0.3s 0s;
+    transition: all 0.3s 0s;
+}
+.popup-element:hover {
+    text-shadow: 1px 2px 2px silver, 1px 2px 1px silver, 1px 1px 10px silver;
+    -ms-transition: all .15s;
+    -moz-transition: all .15s;
+    -webkit-transition: all .15s;
+    transition: all .15s;
 }
 .line:hover {
     cursor: pointer;

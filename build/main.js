@@ -1,35 +1,37 @@
 'use strict'
-// POSTSCRIPT
+// POPUP
+const Popup = function(props) {
+    const popupStyle = {top: props.data.top, left: props.data.left, fontSize: '14px'};
 
+    return (React.createElement('div', {className: 'line-popup', style: popupStyle},
+                 React.createElement('div', {data: props.data.id, action: 'DESCRIBE', style: {cursor: 'pointer', color: 'green'}, className: 'popup-element', onClick: props.clickHandler}, 'DESCRIBE'),
+                 React.createElement('hr',  {style: {margin: '1px'}}, null),
+                 React.createElement('div', {data: props.data.id, action: 'DELETE', style: {cursor: 'pointer', color: 'red'}, className: 'popup-element', onClick: props.clickHandler}, 'DELETE')
+    ));
+};
 // CONNECTING LINE
-const lineComponent = function(props) {
+const Line = function(props) {
     const lineStyle = {width: props.data.w, top: props.data.top, left: props.data.left,  msTransform: "rotate(" + props.data.deg + "deg)", 
-                        WebkitTransform: "rotate(" + props.data.deg + "deg)", transform: "rotate(" + props.data.deg + "deg)"},
-          popupStyle = {display: props.popup === props.id  ? 'block' : 'none', top: (parseInt(props.data.top) + 10) + 'px', left: (parseInt(props.data.left) + 10) + 'px'};
+                        WebkitTransform: "rotate(" + props.data.deg + "deg)", transform: "rotate(" + props.data.deg + "deg)"};
     
     return (React.createElement('div', null, null,
-                React.createElement('hr', { id: props.id, className: 'line', style: lineStyle, onClick: props.onLineClick}, null),
-                React.createElement('div', {data: props.id, className: 'line-popup', style: popupStyle, onClick: props.onPopupClick}, 'DELETE, DESCRIBE')
-            )
-    );
+                React.createElement('hr', { id: props.id, className: 'line', style: lineStyle, onClick: props.onLineClick}, null)                
+    ));
 }
 // HEADER
-const headerComponent = function(props) {
+const Header = function(props) {
     const headerStyle = {backgroundColor: 'blue', borderBottom: '1px', borderBottomColor: 'cyan', color: 'white'},
           closeBtnStyle = {width: '17px', height: '15px', lineHeight: '8px', border: '1px outset white', color: 'white', 
                             backgroundColor: 'red', float: 'right', margin: '5px 5px 0 0', paddingLeft: '3px'};
 
-    return (
-        React.createElement('div', {className: props.className, onClick: props.completeConnection, style: headerStyle}, props.header,
-            React.createElement('div', {className: 'closeBtn', style: closeBtnStyle}, 'x')
-        )
-    );
+    return (React.createElement('div', {className: props.className, onClick: props.completeConnection, style: headerStyle}, props.header,
+                React.createElement('div', {className: 'closeBtn', style: closeBtnStyle}, 'x')
+    ));
 };
 // CONTENT
-const TextComponent = function(props) {    
+const Content = function(props) {    
     return React.createElement('div', {className: props.className}, props.content);
 };
-
 // BOX CONTAINER
 const BoxContainer = function(props) {
     // TODO: extract content from state object!
@@ -48,17 +50,16 @@ const BoxContainer = function(props) {
                                         onDrop: props.dragDrop,
                                         onMouseUp: props.changeBoxSize},
                 // HEADER, TEXT AND LINE COMPONENT!
-                React.createElement(headerComponent, {header: header, className: 'header', completeConnection: props.completeConnection}, null),
+                React.createElement(Header, {header: header, className: 'header', completeConnection: props.completeConnection}, null),
                 React.createElement('div', {className: 'contentCont'},
-                    React.createElement(TextComponent, {content: content, className: 'content'}, null)),
+                    React.createElement(Content, {content: content, className: 'content'}, null)),
                 React.createElement('div', {className: 'addHr', onClick: props.connectionStart, title: 'Click to connect boxes!'},'+')
               )
      );
 };
 
-
 //main component: Higher Order Component - HOC
-class HOC extends React.Component {
+class MainContainer extends React.Component {
     constructor(props) {
         super(props);
         this.dragElementId = -1;
@@ -67,10 +68,9 @@ class HOC extends React.Component {
         this.startingPos = null;
         this.startingConn = null;
         this.connectionOn = false;
-        this.popupDisplay = false;
         this.dropped = false;
         this.position = {};
-        this.state = {tree: this.props.storage, connections: this.props.connections, popup: ''};
+        this.state = {tree: this.props.storage, connections: this.props.connections, popup: null};
         //helper functions
         this.deepClone = this.deepClone.bind(this);
         this.calculateConnection = this.calculateConnection.bind(this);
@@ -111,11 +111,13 @@ class HOC extends React.Component {
         e.preventDefault();
         this.setState({tree: Object.assign({}, this.startingPos), connections: Object.assign({}, this.startingConn)});
     }
-    linePopup(e) {
+    onPopupClick(e) {
         e = e || window.event;
-        console.log(e.currentTarget.data);
-        this.setState({popup: ''});
-
+        for (let key in e.target) {
+            //console.log(e.target[key]);
+        }
+        console.log(e.currentTarget.getAttribute('action'));
+        this.setState({popup: null});
     }
     changeBoxSize(e) {
         if (this.connectionOn) {return;}
@@ -292,16 +294,13 @@ class HOC extends React.Component {
                     deg: 0},
               c = { top:  (parseInt(parentRect.top) + parseInt(parentRect.height) + (aLen/2) + (cLen / 2)) + 'px',
                     left: (parseInt(b.left) + ((bLen < 0 ? 0 : bLen)) - (cLen < 0 ? (-cLen/2) : (cLen/2))) + 'px',
-                    w: (Math.abs(cLen)) + 'px',
+                    w: (Math.abs(cLen) + 5) + 'px',
                     deg: 90};
         return {a, b, c};
     }
     lineClick(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        this.setState({popup: e.target.id});
-
-        //alert(e.currentTarget.id.split('').map((val, index) => {return ['\n parent: ', '\n child: ', '\n property: '][index] + val;}).join(" "));
+        e = e || window.event;
+        this.setState({popup: {id: e.currentTarget.id, top: (e.pageY - 10) + 'px', left:(e.pageX - 50) + 'px'}});
     }
     render() {
         let elementsArr = [];
@@ -310,7 +309,8 @@ class HOC extends React.Component {
             for (const key in this.state.tree) {
                  if (this.state.tree.hasOwnProperty(key)) {
                     const boxElement = this.state.tree[key];
-                    elementsArr.push(React.createElement(BoxContainer, {key: key, id: key + '_', 
+                    elementsArr.push(React.createElement(BoxContainer, {key: key,
+                                                                        id: key + '_', 
                                                                         boxElement: boxElement, 
                                                                         dragStart: this.dragStart.bind(this),
                                                                         dragEnter: this.dragEnter.bind(this),
@@ -322,29 +322,27 @@ class HOC extends React.Component {
                                                                         rightClick: this.rightClick.bind(this)}, null));
                  }
             }
-            if (Object.keys(this.state.connections).length < 1) {return;}
-            for (const key in this.state.connections) {
-                if (this.state.connections.hasOwnProperty(key)) {
-                    for (const key_ in this.state.connections[key]) {
-                        if (this.state.connections[key].hasOwnProperty(key_)) {
-                            for (const key__ in this.state.connections[key][key_]) {
-                                if (this.state.connections[key][key_].hasOwnProperty(key__)) {
-                                    const id = key+key_+key__;
-                                    //TODO: add event listeners!
-                                    elementsArr.push(React.createElement(lineComponent, {key: id, 
-                                                                                        id: id,
-                                                                                        onLineClick: this.lineClick.bind(this),
-                                                                                        onPopupClick: this.linePopup.bind(this),
-                                                                                        data: this.state.connections[key][key_][key__],
-                                                                                        popup: this.state.popup
-                                                                                    }
-                                                                )
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+            Object.keys(this.state.connections).forEach((key)=> {
+                Object.keys(this.state.connections[key]).forEach((key_)=> {
+                    Object.keys(this.state.connections[key][key_]).forEach((key__)=> {
+                        const id = key+key_+key__;
+                        elementsArr.push(React.createElement(Line, {key: id, id: id,
+                                                                    onLineClick: this.lineClick.bind(this),
+                                                                    data: this.state.connections[key][key_][key__]
+                                                                    }
+                                        )
+                        )
+                    });
+                });
+            });            
+
+            if (this.state.popup) {
+                elementsArr.push(React.createElement(Popup, {key: this.state.popup + '_popup',
+                                                             data: this.state.popup,
+                                                             clickHandler: this.onPopupClick.bind(this)
+                                                            }
+                                )
+                )
             }
         })();
 
@@ -355,9 +353,9 @@ let connections = {
     /*
     0: {
         1: {
-            a: {top: "150px", left: "250px", w: "20px", deg: 90},
-            b: {top: "250px", left: "150px", w: "200px", deg: 0},
-            c: {top: "350px", left: "170px", w: "220px", deg: 90}
+            a: {top: "150px", left: "250px", w: "20px",  deg: 90, description: {top: calcTop, left: calcLeft}},
+            b: {top: "250px", left: "150px", w: "200px", deg: 0, description:  {top: calcTop, left: calcLeft}},
+            c: {top: "350px", left: "170px", w: "220px", deg: 90, description: {top: calcTop, left: calcLeft}}
         }
     }
     */
@@ -421,5 +419,5 @@ let storage = {
 
 
 document.addEventListener("DOMContentLoaded", function(e) {
-    ReactDOM.render(React.createElement(HOC, {storage, connections}, null), document.getElementById('root'));
+    ReactDOM.render(React.createElement(MainContainer, {storage, connections}, null), document.getElementById('root'));
 }); 
