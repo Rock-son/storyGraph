@@ -3,10 +3,10 @@
 const LinePopup = function(props) {
     const linePopupStyle = {top: props.data.top, left: props.data.left, fontSize: '14px'};
 
-    return (React.createElement('div', {id: props.data.id + '_linePop', className: 'line-popup', style: linePopupStyle},
+    return (React.createElement('div', {id: props.data.id + '_linePop', className: 'line-popup', style: linePopupStyle, onMouseEnter: props.onLineEnter, onMouseLeave: props.onLineLeave},
                  React.createElement('div', {data: props.data.id, action: 'DESCRIBE', style: {cursor: 'pointer', color: 'green'}, className: 'popup-element', onClick: props.clickHandler}, 'DESCRIBE'),
                  React.createElement('hr',  {style: {margin: '1px'}}, null),
-                 React.createElement('div', {data: props.data.id, action: 'DELETE', style: {cursor: 'pointer', color: 'red'}, className: 'popup-element', onClick: props.clickHandler}, 'DELETE')
+                 React.createElement('div', {data: props.data.id, action: 'DELETE', style: {cursor: 'pointer', color: 'red'}, className: 'popup-element', onClickCapture: props.clickHandler}, 'DELETE')
     ));
 };
 // CONNECTING LINE
@@ -59,7 +59,7 @@ const BoxContainer = function(props) {
 };
 
 //main component: Higher Order Component - HOC
-class MainContainer extends React.Component {
+class MainComponent extends React.Component {
     constructor(props) {
         super(props);
         this.dragElementId = -1;
@@ -76,7 +76,11 @@ class MainContainer extends React.Component {
         this.getLinesCoord = this.getLinesCoord.bind(this);
         this.calculateConnection = this.calculateConnection.bind(this);
     }
-
+    componentDidMount () {
+        document.getElementsByClassName('container')[0].focus();
+    }
+    componentWillUnmount() {
+    }
     deepClone(obj) {
         let newObj,
         i;
@@ -120,7 +124,7 @@ class MainContainer extends React.Component {
     onLineEnter(e) {
         if (this.connectionOn) {return;}
         e = e || window.event;
-        
+
         const parentId = parseInt(e.target.id[0] || e.target.getAttribute('data')[0]),
               childId = parseInt(e.target.id[1]  || e.target.getAttribute('data')[1]),
               newStateTree = Object.assign({}, this.state.tree, 
@@ -141,6 +145,11 @@ class MainContainer extends React.Component {
             });
         this.setState({tree: Object.assign({}, newStateTree)});
     }
+    // TODO:...
+    onKeyDown(e) {
+        e = e || window.event;
+        console.log(e.shiftKey);
+    }
     onPopupClick(e) {
         e = e || window.event;
         const parentId = parseInt(e.currentTarget.getAttribute('data')[0]),
@@ -154,8 +163,8 @@ class MainContainer extends React.Component {
                       childsParents = this.state.tree[childId].parents,
                       parentsChildren = this.state.tree[parentId].children,
                       updateTree = Object.assign({}, this.state.tree, 
-                                        {[parentId]: Object.assign({}, this.state.tree[parentId], {children: parentsChildren.filter((child) => child !== childId)})},  // parent looses a child
-                                        {[childId] : Object.assign({}, this.state.tree[childId],  {parents: childsParents.filter((parent) => parent !== parentId)})   // child looses a parent
+                                        {[parentId]: Object.assign({}, this.state.tree[parentId], {children: parentsChildren.filter((child) => child !== childId), style: {border: '1px solid blue'}})},  // parent looses a child
+                                        {[childId] : Object.assign({}, this.state.tree[childId],  {parents: childsParents.filter((parent) => parent !== parentId), style: {border: '1px solid blue'}})   // child looses a parent
                                    });
 
                 this.setState({linePopup: null, connections: updateConnections, tree: updateTree});
@@ -168,6 +177,7 @@ class MainContainer extends React.Component {
         } 
     }
     onPopupOutClick(e) {
+        
         this.setState({linePopup: null});
     }
     changeBoxSize(e) {
@@ -195,8 +205,7 @@ class MainContainer extends React.Component {
                                         {[targetId]: Object.assign({}, (newStateConnections || {})[targetId] || {}, 
                                                 {[childId]: Object.assign({}, ((newStateConnections || {})[targetId] || {})[childId] || {},
                                                         this.calculateConnection(parentEl, childEl, newStateTree))}
-                                        )});
-            console.log(childId, newStateConnections);            
+                                        )});           
         });
         // CHECK - MAKES A MISTAKE AFTER THIRD CHILD
         parents.forEach((parentId) => {
@@ -282,7 +291,6 @@ class MainContainer extends React.Component {
                                             {left: this.position.left, top: this.position.top})})
         });
 
-        console.log(Object.assign({}, this.getLinesCoord(targetId, newStateTree)));
         this.dragElement = null;
         this.setState({tree: Object.assign({}, newStateTree), connections: Object.assign({}, this.getLinesCoord(targetId, newStateTree))});
     }
@@ -374,7 +382,7 @@ class MainContainer extends React.Component {
                     const boxElement = this.state.tree[key];
                     elementsArr.push(React.createElement(BoxContainer, {key: key,
                                                                         id: key + '_', 
-                                                                        boxElement: boxElement, 
+                                                                        boxElement: boxElement,
                                                                         dragStart: this.dragStart.bind(this),
                                                                         dragEnter: this.dragEnter.bind(this),
                                                                         dragLeave: this.dragLeave.bind(this),
@@ -417,11 +425,13 @@ class MainContainer extends React.Component {
             }
         })();
 
-        return React.createElement('div', {className: 'container', 
-                                           onDragEnd: this.dragEnd.bind(this), 
-                                           onDragOver: this.dragOver.bind(this), 
-                                           onClick: this.onPopupOutClick.bind(this), 
-                                           onContextMenu: this.rightClick.bind(this)}, null, 
+        return React.createElement('div', {className: 'container',
+                                           tabIndex: 1,
+                                           onDragEnd: this.dragEnd.bind(this),
+                                           onDragOver: this.dragOver.bind(this),
+                                           onClick: this.onPopupOutClick.bind(this),
+                                           onKeyDown: this.onKeyDown.bind(this),
+                                           onContextMenu: this.rightClick.bind(this)}, null,
                                     elementsArr);
     }
 }
@@ -494,5 +504,7 @@ let storage = {
 
 
 document.addEventListener("DOMContentLoaded", function(e) {
-    ReactDOM.render(React.createElement(MainContainer, {storage, connections}, null), document.getElementById('root'));
+    ReactDOM.render(React.createElement(MainComponent, {storage, connections}, null), document.getElementById('root'));
 }); 
+
+/*{storage: JSON.parse(<?php json_encode($php_storage_object)) ?>), connections: JSON.parse(<?php json_encode($php_storage_object)) ?>)}*/
