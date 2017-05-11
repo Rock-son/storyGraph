@@ -84,6 +84,7 @@ body {
     padding: 2px 5px;
     border-radius: 3px;
     background-color: white;
+    border: 3px outset blue;
     -webkit-transition: top, left 0.3s 0s;
     -moz-transition: top, left 0.3s 0s;
     -o-transition: top, left 0.3s 0s;

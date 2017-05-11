@@ -1,9 +1,9 @@
 'use strict'
-// POPUP
-const Popup = function(props) {
-    const popupStyle = {top: props.data.top, left: props.data.left, fontSize: '14px'};
+// LINE POPUP
+const LinePopup = function(props) {
+    const linePopupStyle = {top: props.data.top, left: props.data.left, fontSize: '14px'};
 
-    return (React.createElement('div', {className: 'line-popup', style: popupStyle},
+    return (React.createElement('div', {id: props.data.id + '_linePop', className: 'line-popup', style: linePopupStyle, onMouseEnter: props.onLineEnter},
                  React.createElement('div', {data: props.data.id, action: 'DESCRIBE', style: {cursor: 'pointer', color: 'green'}, className: 'popup-element', onClick: props.clickHandler}, 'DESCRIBE'),
                  React.createElement('hr',  {style: {margin: '1px'}}, null),
                  React.createElement('div', {data: props.data.id, action: 'DELETE', style: {cursor: 'pointer', color: 'red'}, className: 'popup-element', onClick: props.clickHandler}, 'DELETE')
@@ -15,7 +15,7 @@ const Line = function(props) {
                         WebkitTransform: "rotate(" + props.data.deg + "deg)", transform: "rotate(" + props.data.deg + "deg)"};
     
     return (React.createElement('div', null, null,
-                React.createElement('hr', { id: props.id, className: 'line', style: lineStyle, onClick: props.onLineClick}, null)                
+                React.createElement('hr', { id: props.id, className: 'line', style: lineStyle, onClick: props.onLineClick, onMouseEnter: props.onLineEnter, onMouseLeave: props.onLineLeave}, null)                
     ));
 }
 // HEADER
@@ -34,7 +34,7 @@ const Content = function(props) {
 };
 // BOX CONTAINER
 const BoxContainer = function(props) {
-    // TODO: extract content from state object!
+    // TODO: Should Component Update?
     const header = props.boxElement.header,
           content = props.boxElement.content,
           { top, left } = props.boxElement.position,
@@ -70,9 +70,10 @@ class MainContainer extends React.Component {
         this.connectionOn = false;
         this.dropped = false;
         this.position = {};
-        this.state = {tree: this.props.storage, connections: this.props.connections, popup: null};
+        this.state = {tree: this.props.storage, connections: this.props.connections, linePopup: null, popup: null};
         //helper functions
         this.deepClone = this.deepClone.bind(this);
+        this.getLinesCoord = this.getLinesCoord.bind(this);
         this.calculateConnection = this.calculateConnection.bind(this);
     }
 
@@ -111,40 +112,99 @@ class MainContainer extends React.Component {
         e.preventDefault();
         this.setState({tree: Object.assign({}, this.startingPos), connections: Object.assign({}, this.startingConn)});
     }
+    lineClick(e) {
+        e = e || window.event;
+        e.stopPropagation();        
+        this.setState({linePopup: Object.assign({}, {id: e.currentTarget.id, top: (e.pageY - 10) + 'px', left:(e.pageX - 50) + 'px'})});
+    }
+    onLineEnter(e) {
+        e = e || window.event;
+        
+        const parentId = parseInt(e.target.id[0] || e.target.getAttribute('data')[0]),
+              childId = parseInt(e.target.id[1]  || e.target.getAttribute('data')[1]),
+              newStateTree = Object.assign({}, this.state.tree, 
+                                    {[parentId]: Object.assign({}, this.state.tree[parentId], {style: {border: '3px solid blue'}})},
+                                    {[childId]:  Object.assign({}, this.state.tree[childId],  {style: {border: '3px solid blue'}})
+            });
+        this.setState({tree: Object.assign({}, newStateTree)});
+    }
+    onLineLeave(e) {
+        e = e || window.event;
+        e.stopPropagation();
+        const parentId = parseInt(e.target.id[0]),
+              childId = parseInt(e.target.id[1]),
+              newStateTree = Object.assign({}, this.state.tree, 
+                                    {[parentId]: Object.assign({}, this.state.tree[parentId], {style: {border: '1px solid blue'}})},
+                                    {[childId]: Object.assign({},  this.state.tree[childId],  {style: {border: '1px solid blue'}})
+            });
+        this.setState({tree: Object.assign({}, newStateTree)});
+    }
     onPopupClick(e) {
         e = e || window.event;
-        for (let key in e.target) {
-            //console.log(e.target[key]);
-        }
-        console.log(e.currentTarget.getAttribute('action'));
-        this.setState({popup: null});
+        const parentId = parseInt(e.currentTarget.getAttribute('data')[0]),
+              childId = parseInt(e.currentTarget.getAttribute('data')[1]),
+              lineId = parseInt(e.currentTarget.getAttribute('data')[2]),
+              action = e.currentTarget.getAttribute('action');
+              
+        switch(action) {
+            case 'DELETE':
+                const updateConnections = Object.assign({}, this.state.connections, {[parentId]: Object.assign({}, this.state.connections[parentId], {[childId]: null })}),
+                      childsParents = this.state.tree[childId].parents,
+                      parentsChildren = this.state.tree[parentId].children,
+                      updateTree = Object.assign({}, this.state.tree, 
+                                        {[parentId]: Object.assign({}, this.state.tree[parentId], {children: parentsChildren.filter((child) => child !== childId)})},  // parent looses a child
+                                        {[childId] : Object.assign({}, this.state.tree[childId],  {parents: childsParents.filter((parent) => parent !== parentId)})   // child looses a parent
+                                   });
+
+                this.setState({linePopup: null, connections: updateConnections, tree: updateTree});
+                break;
+            case 'DESCRIBE':
+                // TODO
+                break;
+            default:
+                this.setState({linePopup: null});
+        } 
+    }
+    onPopupOutClick(e) {
+        this.setState({LinePopup: null});
     }
     changeBoxSize(e) {
         if (this.connectionOn) {return;}
 
         e = e || window.event;
         const targetId = parseInt(e.currentTarget.id),
-              newStateTree = this.deepClone(this.state.tree),
-              newStateConnections = this.deepClone(this.state.connections),              
-              children = newStateTree[targetId].children,
-              parents = newStateTree[targetId].parents;
+              newStateTree = Object.assign({}, this.state.tree, 
+                            {[targetId]: Object.assign({}, this.state.tree[targetId],
+                                        {size: Object.assign({}, this.state.tree[targetId].size, {width: e.currentTarget.getBoundingClientRect().width, height: e.currentTarget.getBoundingClientRect().height})})
+        });
         
-        newStateTree[targetId].size = {width: e.currentTarget.getBoundingClientRect().width, height: e.currentTarget.getBoundingClientRect().height};
+        this.setState({tree: Object.assign({}, newStateTree), connections: Object.assign({}, this.getLinesCoord(targetId, newStateTree))});
+    }
+    getLinesCoord(targetId, newStateTree) {
+
+        let   newStateConnections = Object.assign({}, this.state.connections);
+        const children = this.state.tree[targetId].children,
+              parents = this.state.tree[targetId].parents;  
+
         children.forEach((childId) => {
-            const parentEl = newStateTree[targetId],
-                  childEl = newStateTree[childId];
-            if (newStateConnections[targetId][childId] != null) {
-                newStateConnections[targetId][childId] = Object.assign({}, this.state.connections[targetId][childId], this.calculateConnection(parentEl, childEl, newStateTree));
-            }
+            const parentEl = Object.assign({}, newStateTree[targetId]),
+                  childEl  = Object.assign({}, newStateTree[childId]);
+            newStateConnections = Object.assign({}, this.state.connections || {}, 
+                                        {[targetId]: Object.assign({}, this.state.connections[targetId] || {}, 
+                                                {[childId]: Object.assign({}, (this.state.connections[targetId] || {})[childId] || {},
+                                                        this.calculateConnection(parentEl, childEl, newStateTree))}
+                                        )});
         });
         parents.forEach((parentId) => {
             const parentEl = newStateTree[parentId],
-                  childEl = newStateTree[targetId];                  
-            if (newStateConnections[parentId][targetId] != null) {
-                newStateConnections[parentId][targetId] = Object.assign({}, this.state.connections[parentId][targetId], this.calculateConnection(parentEl, childEl, newStateTree));
-            }            
+                    childEl = newStateTree[targetId];
+            newStateConnections = Object.assign({}, newStateConnections || {}, 
+                                        {[parentId]: Object.assign({}, newStateConnections[parentId] || {}, 
+                                                {[targetId]: Object.assign({}, (newStateConnections[parentId] || {})[targetId] || {},
+                                                        this.calculateConnection(parentEl, childEl, newStateTree))}
+                                        )});
         });
-        this.setState({tree: Object.assign({}, newStateTree), connections: Object.assign({}, newStateConnections)});
+        return newStateConnections;
     }
     dragStart(e) {
         e = e || window.event;
@@ -156,8 +216,8 @@ class MainContainer extends React.Component {
         // calculate mouse offset points for punctual drop
         this.position.offsetX = e.pageX - parseInt(this.state.tree[this.dragElementId].position.left);
         this.position.offsetY = e.pageY - parseInt(this.state.tree[this.dragElementId].position.top);
-        this.startingPos = this.deepClone(this.state.tree);
-        this.startingConn = this.deepClone(this.state.connections);
+        this.startingPos = Object.assign({}, this.state.tree);
+        this.startingConn = Object.assign({}, this.state.connections);
     }
     dragOver(e) {
         e = e || window.event;
@@ -173,10 +233,10 @@ class MainContainer extends React.Component {
         const targetId = parseInt(e.currentTarget.id);
         if (targetId === this.dragElementId) {return;}
 
-        const cloneState = this.deepClone(this.state.tree);
-        cloneState[targetId].style = Object.assign({}, this.state.tree[targetId].style, {border: '3px solid green'});
-        
-        this.setState({tree: cloneState});
+        const newStateTree = Object.assign({}, this.state.tree, 
+                                    {[targetId]: Object.assign({}, this.state.tree[targetId], 
+                                                {style: Object.assign({}, this.state.tree[targetId].style, {border: '3px solid green'})})});
+        this.setState({tree: newStateTree});
     }
     dragLeave(e) {
         e = e || window.event;
@@ -187,10 +247,11 @@ class MainContainer extends React.Component {
               dragId = parseInt(e.target.id);
         if (targetId === this.dragElementId || targetId !== dragId) {return;}
 
-        const cloneState = this.deepClone(this.state.tree);
-        cloneState[targetId].style = Object.assign({}, cloneState[targetId].style, {border: '1px solid blue'});
+        const newStateTree = Object.assign({}, this.state.tree, 
+                                    {[targetId]: Object.assign({}, this.state.tree[targetId], 
+                                            {style: Object.assign({}, this.state.tree[targetId].style, {border: '1px solid blue'})})});
         this.lineElement = null;
-        this.setState({tree: cloneState});
+        this.setState({tree: newStateTree});
     }
     //for switching boxContainers positions
     switchContainers(e) {
@@ -210,44 +271,38 @@ class MainContainer extends React.Component {
     dragEnd(e) {
         if (this.dropped) {return;}
         
-        const newStateTree = this.deepClone(this.state.tree),
-              newStateConnections = this.deepClone(this.state.connections),
-              targetId = this.dragElementId,
-              children = newStateTree[this.dragElementId].children,
-              parents = newStateTree[this.dragElementId].parents;
-
-        newStateTree[this.dragElementId].position = {left: this.position.left, top: this.position.top};
-        // update connections for concerning box containers (children and parents)
-        children.forEach((childId) => {
-            const targetEl = newStateTree[childId],
-                  parentEl = newStateTree[targetId];
-            newStateConnections[targetId][childId] = this.calculateConnection(parentEl, targetEl, newStateTree);
-        });
-        parents.forEach((parentId) => {
-            const parentEl = newStateTree[parentId],
-                  childEl = newStateTree[targetId];
-            newStateConnections[parentId][targetId] = this.calculateConnection(parentEl, childEl, newStateTree);
+        const targetId = this.dragElementId,
+              newStateTree = Object.assign({}, this.state.tree, 
+                            {[targetId]: Object.assign({}, this.state.tree[targetId],
+                                    {position: Object.assign({}, this.state.tree[targetId].position, 
+                                            {left: this.position.left, top: this.position.top})})
         });
         this.dragElement = null;
-        this.setState({tree: newStateTree, connections: newStateConnections});
+        this.setState({tree: Object.assign({}, newStateTree), connections: Object.assign({}, this.getLinesCoord(targetId, newStateTree))});
     }
     connectionStart(e) {
         
         e = e || window.event;
         const currentElementId = parseInt(e.currentTarget.parentNode.id),
-              previousElementId = this.lineElement == null ? -1 : parseInt(this.lineElement.id),
-              newStateTree = this.deepClone(this.state.tree);
+              previousElementId = this.lineElement == null ? -1 : parseInt(this.lineElement.id);
+        let   newStateTree = null;
         this.connectionOn = true;
 
         // IF FIRST CLICK - opening the line connection
         if (previousElementId === -1) {
             this.lineElement = e.currentTarget.parentNode;
-            newStateTree[parseInt(this.lineElement.id)].style = Object.assign({}, newStateTree[parseInt(this.lineElement.id)].style, {border: '3px solid green'});
+            newStateTree = Object.assign({}, this.state.tree, 
+                                    {[currentElementId]: Object.assign({}, this.state.tree[currentElementId], 
+                                            {style: {border: '3px solid green'}})
+            });
         // IF CLICKED ON THE SAME BOX AGAIN
         } else if (currentElementId === previousElementId) {
-            newStateTree[parseInt(this.lineElement.id)].style = Object.assign({}, newStateTree[parseInt(this.lineElement.id)].style, {border: '1px solid blue'});
+            newStateTree = Object.assign({}, this.state.tree, 
+                                    {[currentElementId]: Object.assign({}, this.state.tree[currentElementId], 
+                                            {style: {border: '1px solid blue'}})
+            });
             this.lineElement = null;
-        } 
+        }
         this.setState({tree: newStateTree});
     }
     completeConnection(e) {
@@ -255,25 +310,30 @@ class MainContainer extends React.Component {
         if (this.lineElement == null || parseInt(this.lineElement.id) === parseInt(e.currentTarget.parentNode.id)) {return;}
         e = e || window.event;
 
-        let   newStateTree = this.deepClone(this.state.tree) || {},
-              newConnections = this.deepClone(this.state.connections) || {};
+        let   newStateTree = null,
+              newConnections = null;
         const parentId = parseInt(this.lineElement.id),
-              parentEl = newStateTree[parentId],
-              targetId = parseInt(e.currentTarget.parentNode.id),  
-              targetEl = newStateTree[targetId],     
+              parentEl = this.state.tree[parentId],
+              childId = parseInt(e.currentTarget.parentNode.id),  
+              targetEl = this.state.tree[childId],
+              childrenOfParent = this.state.tree[parentId].children,
+              parentsOfChild = this.state.tree[childId].parents,
               calcConnectionsObj = this.calculateConnection(parentEl, targetEl);
               
-        // update or add children
-        newStateTree[parentId].children.indexOf(targetId) > -1 ? void 0 : newStateTree[parentId].children.push(targetId);
-        newStateTree[targetId].parents.indexOf(parentId) > -1 ? void 0 : newStateTree[targetId].parents.push(parentId);
-        // update or add connections
-        newConnections[parentId] = newConnections[parentId] || {};
-        newConnections[parentId][targetId] = calcConnectionsObj;
-        // change border to normal        
-        newStateTree[parseInt(this.lineElement.id)].style = Object.assign({}, newStateTree[parseInt(this.lineElement.id)].style, {border: '1px solid blue'});
+        // update or add children (check for object existance)
+        newStateTree = Object.assign({}, this.state.tree, 
+                            {[parentId]: Object.assign({}, this.state.tree[parentId], {children: childrenOfParent.indexOf(childId) > -1 ? childrenOfParent : childrenOfParent.concat([childId]), style: {border: '1px solid blue'}})},
+                            {[childId]: Object.assign({}, this.state.tree[childId],   {parents:  parentsOfChild.indexOf(parentId) > -1 ?   parentsOfChild   : parentsOfChild.concat([parentId])})
+                       });
+        // update or add connections (check for object existance)        
+        newConnections = Object.assign({}, this.state.connections, 
+                                     {[parentId]: Object.assign({}, this.state.connections[parentId] || {},
+                                            {[childId]: Object.assign({}, (this.state.connections[parentId] || {})[childId] || {},
+                                                    calcConnectionsObj)})}
+        );
         this.lineElement = null;
         this.connectionOn = false;
-
+        
         this.setState({tree: newStateTree, connections: newConnections});
     }
     calculateConnection(parent, target, newStateTree = this.state.tree) {
@@ -298,14 +358,11 @@ class MainContainer extends React.Component {
                     deg: 90};
         return {a, b, c};
     }
-    lineClick(e) {
-        e = e || window.event;
-        this.setState({popup: {id: e.currentTarget.id, top: (e.pageY - 10) + 'px', left:(e.pageX - 50) + 'px'}});
-    }
     render() {
         let elementsArr = [];
         //events for boxContainers - move it in WillComponentUpdate
         (() => {
+            // BOX CONTAINERS
             for (const key in this.state.tree) {
                  if (this.state.tree.hasOwnProperty(key)) {
                     const boxElement = this.state.tree[key];
@@ -322,31 +379,44 @@ class MainContainer extends React.Component {
                                                                         rightClick: this.rightClick.bind(this)}, null));
                  }
             }
+            // LINES
             Object.keys(this.state.connections).forEach((key)=> {
                 Object.keys(this.state.connections[key]).forEach((key_)=> {
-                    Object.keys(this.state.connections[key][key_]).forEach((key__)=> {
+                    if (this.state.connections[key][key_]) {
+                        Object.keys(this.state.connections[key][key_]).forEach((key__)=> {
                         const id = key+key_+key__;
                         elementsArr.push(React.createElement(Line, {key: id, id: id,
                                                                     onLineClick: this.lineClick.bind(this),
+                                                                    onLineEnter: this.onLineEnter.bind(this),
+                                                                    onLineLeave: this.onLineLeave.bind(this),
                                                                     data: this.state.connections[key][key_][key__]
                                                                     }
+                                                            )
                                         )
-                        )
-                    });
+                        });
+                    }
+                    
                 });
             });            
-
-            if (this.state.popup) {
-                elementsArr.push(React.createElement(Popup, {key: this.state.popup + '_popup',
-                                                             data: this.state.popup,
-                                                             clickHandler: this.onPopupClick.bind(this)
-                                                            }
+            // POPUP
+            if (this.state.linePopup) {
+                elementsArr.push(React.createElement(LinePopup, {key: this.state.linePopup + '_linePopup',
+                                                                 data: this.state.linePopup,
+                                                                 onLineEnter: this.onLineEnter.bind(this),
+                                                                 onLineLeave: this.onLineLeave.bind(this),
+                                                                 clickHandler: this.onPopupClick.bind(this)
+                                                                }
+                                                    )
                                 )
-                )
             }
         })();
 
-        return React.createElement('div', {className: 'container', onDragEnd: this.dragEnd.bind(this), onDragOver: this.dragOver.bind(this), onContextMenu: this.rightClick.bind(this)}, null, elementsArr);
+        return React.createElement('div', {className: 'container', 
+                                           onDragEnd: this.dragEnd.bind(this), 
+                                           onDragOver: this.dragOver.bind(this), 
+                                           onClick: this.onPopupOutClick.bind(this), 
+                                           onContextMenu: this.rightClick.bind(this)}, null, 
+                                    elementsArr);
     }
 }
 let connections = {
@@ -415,7 +485,6 @@ let storage = {
         size: {width: '120px', height: '100px'}
      }
 };
-
 
 
 document.addEventListener("DOMContentLoaded", function(e) {
