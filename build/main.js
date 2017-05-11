@@ -3,7 +3,7 @@
 const LinePopup = function(props) {
     const linePopupStyle = {top: props.data.top, left: props.data.left, fontSize: '14px'};
 
-    return (React.createElement('div', {id: props.data.id + '_linePop', className: 'line-popup', style: linePopupStyle, onMouseEnter: props.onLineEnter},
+    return (React.createElement('div', {id: props.data.id + '_linePop', className: 'line-popup', style: linePopupStyle},
                  React.createElement('div', {data: props.data.id, action: 'DESCRIBE', style: {cursor: 'pointer', color: 'green'}, className: 'popup-element', onClick: props.clickHandler}, 'DESCRIBE'),
                  React.createElement('hr',  {style: {margin: '1px'}}, null),
                  React.createElement('div', {data: props.data.id, action: 'DELETE', style: {cursor: 'pointer', color: 'red'}, className: 'popup-element', onClick: props.clickHandler}, 'DELETE')
@@ -118,6 +118,7 @@ class MainContainer extends React.Component {
         this.setState({linePopup: Object.assign({}, {id: e.currentTarget.id, top: (e.pageY - 10) + 'px', left:(e.pageX - 50) + 'px'})});
     }
     onLineEnter(e) {
+        if (this.connectionOn) {return;}
         e = e || window.event;
         
         const parentId = parseInt(e.target.id[0] || e.target.getAttribute('data')[0]),
@@ -129,6 +130,7 @@ class MainContainer extends React.Component {
         this.setState({tree: Object.assign({}, newStateTree)});
     }
     onLineLeave(e) {
+        if (this.connectionOn) {return;}
         e = e || window.event;
         e.stopPropagation();
         const parentId = parseInt(e.target.id[0]),
@@ -166,10 +168,10 @@ class MainContainer extends React.Component {
         } 
     }
     onPopupOutClick(e) {
-        this.setState({LinePopup: null});
+        this.setState({linePopup: null});
     }
     changeBoxSize(e) {
-        if (this.connectionOn) {return;}
+        if (this.connectionOn || this.dragElement != null) {return;}
 
         e = e || window.event;
         const targetId = parseInt(e.currentTarget.id),
@@ -189,20 +191,22 @@ class MainContainer extends React.Component {
         children.forEach((childId) => {
             const parentEl = Object.assign({}, newStateTree[targetId]),
                   childEl  = Object.assign({}, newStateTree[childId]);
-            newStateConnections = Object.assign({}, this.state.connections || {}, 
-                                        {[targetId]: Object.assign({}, this.state.connections[targetId] || {}, 
-                                                {[childId]: Object.assign({}, (this.state.connections[targetId] || {})[childId] || {},
+            newStateConnections = Object.assign({}, newStateConnections || {}, 
+                                        {[targetId]: Object.assign({}, (newStateConnections || {})[targetId] || {}, 
+                                                {[childId]: Object.assign({}, ((newStateConnections || {})[targetId] || {})[childId] || {},
                                                         this.calculateConnection(parentEl, childEl, newStateTree))}
                                         )});
+            console.log(childId, newStateConnections);            
         });
+        // CHECK - MAKES A MISTAKE AFTER THIRD CHILD
         parents.forEach((parentId) => {
             const parentEl = newStateTree[parentId],
-                    childEl = newStateTree[targetId];
+                  childEl = newStateTree[targetId];
             newStateConnections = Object.assign({}, newStateConnections || {}, 
-                                        {[parentId]: Object.assign({}, newStateConnections[parentId] || {}, 
-                                                {[targetId]: Object.assign({}, (newStateConnections[parentId] || {})[targetId] || {},
+                                        {[parentId]: Object.assign({}, (newStateConnections|| {})[parentId] || {}, 
+                                                {[targetId]: Object.assign({}, ((newStateConnections || {})[parentId] || {})[targetId] || {},
                                                         this.calculateConnection(parentEl, childEl, newStateTree))}
-                                        )});
+                                        )});            
         });
         return newStateConnections;
     }
@@ -270,13 +274,15 @@ class MainContainer extends React.Component {
     // for moving boxContainers elements
     dragEnd(e) {
         if (this.dropped) {return;}
-        
+        e.stopPropagation();
         const targetId = this.dragElementId,
               newStateTree = Object.assign({}, this.state.tree, 
                             {[targetId]: Object.assign({}, this.state.tree[targetId],
                                     {position: Object.assign({}, this.state.tree[targetId].position, 
                                             {left: this.position.left, top: this.position.top})})
         });
+
+        console.log(Object.assign({}, this.getLinesCoord(targetId, newStateTree)));
         this.dragElement = null;
         this.setState({tree: Object.assign({}, newStateTree), connections: Object.assign({}, this.getLinesCoord(targetId, newStateTree))});
     }
