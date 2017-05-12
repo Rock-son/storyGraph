@@ -1,4 +1,5 @@
 'use strict'
+
 // LINE POPUP
 const LinePopup = function(props) {
     const linePopupStyle = {top: props.data.top, left: props.data.left, fontSize: '14px'};
@@ -12,10 +13,14 @@ const LinePopup = function(props) {
 // CONNECTING LINE
 const Line = function(props) {
     const lineStyle = {width: props.data.w, top: props.data.top, left: props.data.left,  msTransform: "rotate(" + props.data.deg + "deg)", 
-                        WebkitTransform: "rotate(" + props.data.deg + "deg)", transform: "rotate(" + props.data.deg + "deg)"};
-    
+                        WebkitTransform: "rotate(" + props.data.deg + "deg)", transform: "rotate(" + props.data.deg + "deg)"},
+          descriptionElement = props.data.description != null ? React.createElement('div', 
+                                {className: 'svasta', style: {top: props.data.description.top, left: props.data.description.left, width: '100px', height:'20px', position: 'absolute'}}, props.data.description.text) : null;
+
+    console.log(props.data);
     return (React.createElement('div', null, null,
-                React.createElement('hr', { id: props.id, className: 'line', style: lineStyle, onClick: props.onLineClick, onMouseEnter: props.onLineEnter, onMouseLeave: props.onLineLeave}, null)                
+                React.createElement('hr', { id: props.id, className: 'line', style: lineStyle, onClick: props.onLineClick, onMouseEnter: props.onLineEnter, onMouseLeave: props.onLineLeave}, null),
+                descriptionElement
     ));
 }
 // HEADER
@@ -148,7 +153,7 @@ class MainComponent extends React.Component {
     // TODO:...
     onKeyDown(e) {
         e = e || window.event;
-        console.log(e.shiftKey);
+        //console.log(e.shiftKey);
     }
     onPopupClick(e) {
         e = e || window.event;
@@ -192,29 +197,28 @@ class MainComponent extends React.Component {
         
         this.setState({tree: Object.assign({}, newStateTree), connections: Object.assign({}, this.getLinesCoord(targetId, newStateTree))});
     }
-    getLinesCoord(targetId, newStateTree) {
+    getLinesCoord(targetId, stateTree) {
 
         let   newStateConnections = Object.assign({}, this.state.connections);
         const children = this.state.tree[targetId].children,
               parents = this.state.tree[targetId].parents;  
 
         children.forEach((childId) => {
-            const parentEl = Object.assign({}, newStateTree[targetId]),
-                  childEl  = Object.assign({}, newStateTree[childId]);
+            const parentEl = Object.assign({}, stateTree[targetId]),
+                  childEl  = Object.assign({}, stateTree[childId]);
             newStateConnections = Object.assign({}, newStateConnections || {}, 
                                         {[targetId]: Object.assign({}, (newStateConnections || {})[targetId] || {}, 
                                                 {[childId]: Object.assign({}, ((newStateConnections || {})[targetId] || {})[childId] || {},
-                                                        this.calculateConnection(parentEl, childEl, newStateTree))}
+                                                        this.calculateConnection(parentEl, childEl, stateTree))}
                                         )});           
         });
-        // CHECK - MAKES A MISTAKE AFTER THIRD CHILD
         parents.forEach((parentId) => {
-            const parentEl = newStateTree[parentId],
-                  childEl = newStateTree[targetId];
+            const parentEl = stateTree[parentId],
+                  childEl = stateTree[targetId];
             newStateConnections = Object.assign({}, newStateConnections || {}, 
                                         {[parentId]: Object.assign({}, (newStateConnections|| {})[parentId] || {}, 
                                                 {[targetId]: Object.assign({}, ((newStateConnections || {})[parentId] || {})[targetId] || {},
-                                                        this.calculateConnection(parentEl, childEl, newStateTree))}
+                                                        this.calculateConnection(parentEl, childEl, stateTree))}
                                         )});            
         });
         return newStateConnections;
@@ -347,7 +351,6 @@ class MainComponent extends React.Component {
         );
         this.lineElement = null;
         this.connectionOn = false;
-        
         this.setState({tree: newStateTree, connections: newConnections});
     }
     calculateConnection(parent, target, newStateTree = this.state.tree) {
@@ -361,20 +364,28 @@ class MainComponent extends React.Component {
               a = { top:  (parseInt(parentRect.top) + parseInt(parentRect.height)) + 'px',
                     left: (parseInt(parentRect.left) + (parseInt(parentRect.width) / 2) - (aLen / 2)) + 'px',
                     w: aLen,
-                    deg: 90 },
-              b = { top:  (parseInt(parentRect.top) + parseInt(parentRect.height) + (aLen / 2)) + 'px',
+                    deg: 90 };
+        let   b = { top:  (parseInt(parentRect.top) + parseInt(parentRect.height) + (aLen / 2)) + 'px',
                     left: (parseInt(parentRect.left) + (parseInt(parentRect.width) / 2) + (bLen < 0 ? bLen : 0)) + 'px',
                     w: (Math.abs(bLen) + 2) + 'px',
-                    deg: 0},
-              c = { top:  (parseInt(parentRect.top) + parseInt(parentRect.height) + (aLen/2) + (cLen / 2)) + 'px',
+                    deg: 0 };
+        const c = { top:  (parseInt(parentRect.top) + parseInt(parentRect.height) + (aLen/2) + (cLen / 2)) + 'px',
                     left: (parseInt(b.left) + ((bLen < 0 ? 0 : bLen)) - (cLen < 0 ? (-cLen/2) : (cLen/2))) + 'px',
                     w: (Math.abs(cLen) + 5) + 'px',
-                    deg: 90};
+                    deg: 90 };
+            
+        if ((newStateTree[parent.id].description || {})[target.id] != null) {
+            // add the description object location data
+            b = Object.assign({}, b, {description: {top: b.top,
+                                                    left: (parseInt(b.left) + (parseInt(b.w) / 2) - 50) +'px',
+                                                    text: newStateTree[parent.id].description[target.id].text
+                                                    }
+            });
+        }
         return {a, b, c};
     }
     render() {
         let elementsArr = [];
-        //events for boxContainers - move it in WillComponentUpdate
         (() => {
             // BOX CONTAINERS
             for (const key in this.state.tree) {
@@ -432,47 +443,43 @@ class MainComponent extends React.Component {
                                            onClick: this.onPopupOutClick.bind(this),
                                            onKeyDown: this.onKeyDown.bind(this),
                                            onContextMenu: this.rightClick.bind(this)}, null,
-                                    elementsArr);
+                                    elementsArr );
     }
 }
 let connections = {
-    /*
+    
     0: {
         1: {
-            a: {top: "150px", left: "250px", w: "20px",  deg: 90, description: {top: calcTop, left: calcLeft}},
-            b: {top: "250px", left: "150px", w: "200px", deg: 0, description:  {top: calcTop, left: calcLeft}},
-            c: {top: "350px", left: "170px", w: "220px", deg: 90, description: {top: calcTop, left: calcLeft}}
+            a: {top: "150px", left: "750px", w: "20px",  deg: 90},
+            b: {top: "160px", left: "760px", w: "280px", deg:  0},
+            c: {top: "218.5px", left: "979.5px", w: "122px", deg: 90}
         }
     }
-    */
+    
 };
 
 let storage = {
     0: {
         id: 0,
         parents: [],
-        children: [],
+        children: [1],
         header:"header0", 
         content: "option",
-        postscript: "",
-        expanded: true,
-        type: "",
         style: {border: '1px solid blue'},
         position: {left: '700px', top: '50px'},
-        size: {width: '120px', height: '100px'}
+        size: {width: '120px', height: '100px'},
+        description: {1: {text: "test"}}
      },
      1: {
         id: 1,
-        parents: [],
+        parents: [0],
         children: [],
         header:"header1", 
         content: "option 1",
-        postscript: "",
-        expanded: true,
-        type: "",
         style: {border: '1px solid blue'},
         position: {left: '978px', top: '287px'},
-        size: {width: '120px', height: '100px'}
+        size: {width: '120px', height: '100px'},
+        description: {}
      }, 
      2: { 
         id: 2,
@@ -480,12 +487,10 @@ let storage = {
         children: [],
         header:"header2", 
         content: "option 2",
-        postscript: "",
-        expanded: true,
-        type: "",
         style: {border: '1px solid blue'},
         position: {left: '390px', top: '260px'},
-        size: {width: '120px', height: '100px'}
+        size: {width: '120px', height: '100px'},
+        description: {}
      }, 
      3: { 
         id: 3,
@@ -493,12 +498,10 @@ let storage = {
         children: [],
         header:"header3", 
         content: 'option 3',
-        postscript: "",
-        expanded: true,
-        type: "",
         style: {border: '1px solid blue'},
         position: {left: '250px', top: '260px'},
-        size: {width: '120px', height: '100px'}
+        size: {width: '120px', height: '100px'},
+        description: {}
      }
 };
 
