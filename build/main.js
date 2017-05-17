@@ -13,11 +13,24 @@ const LinePopup = function(props) {
 // CONNECTING LINE
 const Line = function(props) {
     const lineStyle = {width: props.data.w, top: props.data.top, left: props.data.left,  msTransform: "rotate(" + props.data.deg + "deg)", 
-                        WebkitTransform: "rotate(" + props.data.deg + "deg)", transform: "rotate(" + props.data.deg + "deg)"},
-          descriptionElement = props.data.description != null ? React.createElement('div', 
-                                {className: 'svasta', style: {top: props.data.description.top, left: props.data.description.left, width: '100px', height:'20px', position: 'absolute'}}, props.data.description.text) : null;
+                        WebkitTransform: "rotate(" + props.data.deg + "deg)", transform: "rotate(" + props.data.deg + "deg)"};
+    let descriptionElement = null;
 
-    console.log(props.data);
+    if (props.data.description != null) {
+        descriptionElement = React.createElement('div', 
+                                        {className: 'desc-element',
+                                         title: props.data.description.text,
+                                         style: {top: props.data.description.top, 
+                                                 left: props.data.description.left,
+                                                 width: '100px', 
+                                                 maxHeight: '100px',
+                                                 minHeight:'20px',
+                                                 position: 'absolute'}
+                                        }, props.data.description.text);
+    } else {
+        descriptionElement = null;
+    }
+        
     return (React.createElement('div', null, null,
                 React.createElement('hr', { id: props.id, className: 'line', style: lineStyle, onClick: props.onLineClick, onMouseEnter: props.onLineEnter, onMouseLeave: props.onLineLeave}, null),
                 descriptionElement
@@ -123,8 +136,16 @@ class MainComponent extends React.Component {
     }
     lineClick(e) {
         e = e || window.event;
-        e.stopPropagation();        
-        this.setState({linePopup: Object.assign({}, {id: e.currentTarget.id, top: (e.pageY - 10) + 'px', left:(e.pageX - 50) + 'px'})});
+        const parentId = parseInt(e.currentTarget.id[0]),
+              childId = parseInt(e.currentTarget.id[1]);
+        e.stopPropagation();
+        // TODO: greyout description button, if desc already exists
+        if (this.state.connections[parentId][childId]['b'].description == null) {            
+            this.setState({linePopup: Object.assign({}, {id: e.currentTarget.id, top: (e.pageY - 10) + 'px', left:(e.pageX - 50) + 'px'})});
+        } else {
+            console.log(this.state.linePopup);
+             this.setState({linePopup: Object.assign({}, {id: e.currentTarget.id, top: (e.pageY - 10) + 'px', left:(e.pageX - 50) + 'px'})});
+        }
     }
     onLineEnter(e) {
         if (this.connectionOn) {return;}
@@ -155,34 +176,46 @@ class MainComponent extends React.Component {
         e = e || window.event;
         //console.log(e.shiftKey);
     }
+    // DESCRIBE, DELETE actions
     onPopupClick(e) {
         e = e || window.event;
         const parentId = parseInt(e.currentTarget.getAttribute('data')[0]),
               childId = parseInt(e.currentTarget.getAttribute('data')[1]),
-              lineId = parseInt(e.currentTarget.getAttribute('data')[2]),
               action = e.currentTarget.getAttribute('action');
               
         switch(action) {
             case 'DELETE':
-                const updateConnections = Object.assign({}, this.state.connections, {[parentId]: Object.assign({}, this.state.connections[parentId], {[childId]: null })}),
+                const updateConnections = Object.assign({}, this.state.connections, {[parentId]: Object.assign({}, this.state.connections[parentId], {[childId]: null})}),
                       childsParents = this.state.tree[childId].parents,
                       parentsChildren = this.state.tree[parentId].children,
                       updateTree = Object.assign({}, this.state.tree, 
-                                        {[parentId]: Object.assign({}, this.state.tree[parentId], {children: parentsChildren.filter((child) => child !== childId), style: {border: '1px solid blue'}})},  // parent looses a child
-                                        {[childId] : Object.assign({}, this.state.tree[childId],  {parents: childsParents.filter((parent) => parent !== parentId), style: {border: '1px solid blue'}})   // child looses a parent
+                                        {[parentId]: Object.assign({}, this.state.tree[parentId], 
+                                                    {children: parentsChildren.filter((child) => child !== childId),  // parent looses a child
+                                                     description: Object.assign({}, this.state.tree[parentId].description, {[childId]: null}), // lose description for a child
+                                                     style: {border: '1px solid blue'}})},
+                                        {[childId] : Object.assign({}, this.state.tree[childId], {parents: childsParents.filter((parent) => parent !== parentId), style: {border: '1px solid blue'}})   // child looses a parent
                                    });
-
+                                   
                 this.setState({linePopup: null, connections: updateConnections, tree: updateTree});
                 break;
             case 'DESCRIBE':
-                // TODO
+
+                const parentEl = this.state.tree[parentId],
+                      childEl  = this.state.tree[childId],
+                      _updateTree = Object.assign({}, this.state.tree, 
+                                        {[parentId]: Object.assign({}, this.state.tree[parentId], 
+                                                {description: Object.assign({}, this.state.tree[parentId].description, {[childId]: {text: 'testing.... na kvadrat'}}), style: {border: '1px solid blue'}})}
+                                   ),
+                      _updateConnections = Object.assign({}, this.state.connections, {[parentId]: Object.assign({}, this.state.connections[parentId], {[childId]: this.calculateConnection(parentEl, childEl, _updateTree)})});
+                
+                this.setState({linePopup: null, connections: _updateConnections, tree: _updateTree});
                 break;
             default:
                 this.setState({linePopup: null});
         } 
     }
     onPopupOutClick(e) {
-        
+
         this.setState({linePopup: null});
     }
     changeBoxSize(e) {
@@ -197,6 +230,7 @@ class MainComponent extends React.Component {
         
         this.setState({tree: Object.assign({}, newStateTree), connections: Object.assign({}, this.getLinesCoord(targetId, newStateTree))});
     }
+    // update lines after moving a boxContainer
     getLinesCoord(targetId, stateTree) {
 
         let   newStateConnections = Object.assign({}, this.state.connections);
@@ -340,8 +374,8 @@ class MainComponent extends React.Component {
               
         // update or add children (check for object existance)
         newStateTree = Object.assign({}, this.state.tree, 
-                            {[parentId]: Object.assign({}, this.state.tree[parentId], {children: childrenOfParent.indexOf(childId) > -1 ? childrenOfParent : childrenOfParent.concat([childId]), style: {border: '1px solid blue'}})},
-                            {[childId]: Object.assign({}, this.state.tree[childId],   {parents:  parentsOfChild.indexOf(parentId) > -1 ?   parentsOfChild   : parentsOfChild.concat([parentId])})
+                            {[parentId]: Object.assign({}, this.state.tree[parentId], {children: childrenOfParent.indexOf(childId) > -1 ? childrenOfParent : [].concat([], childrenOfParent, [childId]), style: {border: '1px solid blue'}})},
+                            {[childId]: Object.assign({}, this.state.tree[childId],   {parents:  parentsOfChild.indexOf(parentId) > -1 ?   parentsOfChild   : [].concat([], parentsOfChild, [parentId])})
                        });
         // update or add connections (check for object existance)        
         newConnections = Object.assign({}, this.state.connections, 
@@ -381,7 +415,7 @@ class MainComponent extends React.Component {
                                                     text: newStateTree[parent.id].description[target.id].text
                                                     }
             });
-        }
+        }        
         return {a, b, c};
     }
     render() {
@@ -451,7 +485,7 @@ let connections = {
     0: {
         1: {
             a: {top: "150px", left: "750px", w: "20px",  deg: 90},
-            b: {top: "160px", left: "760px", w: "280px", deg:  0},
+            b: {top: "160px", left: "760px", w: "280px", deg:  0, description: {top: '160px', left: '850px', text: 'testiranje'}},
             c: {top: "218.5px", left: "979.5px", w: "122px", deg: 90}
         }
     }
@@ -468,7 +502,7 @@ let storage = {
         style: {border: '1px solid blue'},
         position: {left: '700px', top: '50px'},
         size: {width: '120px', height: '100px'},
-        description: {1: {text: "test"}}
+        description: {1: {text: "testiranje"}}
      },
      1: {
         id: 1,

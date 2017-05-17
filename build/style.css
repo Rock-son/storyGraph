@@ -86,19 +86,42 @@ body {
     border-radius: 3px;
     background-color: white;
     border: 3px outset blue;
-    -webkit-transition: top, left 0.3s 0s;
-    -moz-transition: top, left 0.3s 0s;
-    -o-transition: top, left 0.3s 0s;
+    -webkit-transition: all 0.3s 0s;
+    -moz-transition: all 0.3s 0s;
+    -o-transition: all 0.3s 0s;
     transition: all 0.3s 0s;
 }
 .popup-element:hover {
-    text-shadow: 1px 2px 2px silver, 1px 2px 1px silver, 1px 1px 10px silver;
-    -ms-transition: all .15s;
-    -moz-transition: all .15s;
-    -webkit-transition: all .15s;
-    transition: all .15s;
+    -ms-transition: all .3s;
+    -moz-transition: all .3s;
+    -webkit-transition: all .3s;
+    transition: all .3s;
+}
+.popup-element[action='DESCRIBE']:hover {
+    background-color: cyan;
+    color: blue !important;
+}
+.popup-element[action='DELETE']:hover {
+    background-color: lightcoral;
+    color: white !important;
 }
 .line:hover {
+    cursor: pointer;
+}
+.desc-element {
+    padding: 0px 5px;
+    max-width: 100px;
+    color: black;
+    font-weight: 700;
+    font-size: 16px;
+    background-color: white;
+    border: 1px solid blue;
+    -webkit-transition: all 0.3s 0s;
+    -moz-transition: all 0.3s 0s;
+    -o-transition: all 0.3s 0s;
+    transition: all 0.3s 0s;
+}
+.desc-element:hover {
     cursor: pointer;
 }
 .closeBtn {
