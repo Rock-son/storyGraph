@@ -1,6 +1,11 @@
 'use strict'
-
-// LINE POPUP
+// ONCLICK CONTENT POPUP
+const ContentPopup = function (props) {
+    const style = {top: props.data.top, left: props.data.left, fontSize: '14px', position: 'absolute', zIndex: 100, width: props.data.width, height: props.data.height};
+    console.log(style);
+    return React.createElement('div', {key: props.key, id: props.id, style}, null);
+};
+// CLICK-LINE POPUP
 const LinePopup = function(props) {
     const linePopupStyle = {top: props.data.top, left: props.data.left, fontSize: '14px'};
 
@@ -10,22 +15,27 @@ const LinePopup = function(props) {
                  React.createElement('div', {data: props.data.id, action: 'DELETE', style: {cursor: 'pointer', color: 'red'}, className: 'popup-element', onClickCapture: props.clickHandler}, 'DELETE')
     ));
 };
-// CONNECTING LINE
+// CONNECTING LINES
 const Line = function(props) {
-    const lineStyle = {width: props.data.w, top: props.data.top, left: props.data.left,  msTransform: "rotate(" + props.data.deg + "deg)", 
+    const lineStyle = {width: props.data.w, top: props.data.top, left: props.data.left, position: 'absolute', zIndex: 0, msTransform: "rotate(" + props.data.deg + "deg)", 
                         WebkitTransform: "rotate(" + props.data.deg + "deg)", transform: "rotate(" + props.data.deg + "deg)"};
     let descriptionElement = null;
 
     if (props.data.description != null) {
-        descriptionElement = React.createElement('div', 
-                                        {className: 'desc-element',
+        descriptionElement = React.createElement('div',
+                                        {key: props.id + '_desc',
+                                         className: 'desc-element',
+                                         onClick: props.onContentClick,
                                          title: props.data.description.text,
-                                         style: {top: props.data.description.top, 
+                                         style: {top: props.data.description.top,
                                                  left: props.data.description.left,
-                                                 width: '100px', 
+                                                 position: 'absolute',
+                                                 zIndex: 1,
+                                                 width: '100px',
                                                  maxHeight: '100px',
                                                  minHeight:'20px',
-                                                 position: 'absolute'}
+                                                 position: 'absolute',
+                                                 borderRadius: '5px'}
                                         }, props.data.description.text);
     } else {
         descriptionElement = null;
@@ -45,10 +55,6 @@ const Header = function(props) {
     return (React.createElement('div', {className: props.className, onClick: props.completeConnection, style: headerStyle}, props.header,
                 React.createElement('div', {className: 'closeBtn', style: closeBtnStyle}, 'x')
     ));
-};
-// CONTENT
-const Content = function(props) {    
-    return React.createElement('div', {className: props.className}, props.content);
 };
 // BOX CONTAINER
 const BoxContainer = function(props) {
@@ -70,7 +76,7 @@ const BoxContainer = function(props) {
                 // HEADER, TEXT AND LINE COMPONENT!
                 React.createElement(Header, {header: header, className: 'header', completeConnection: props.completeConnection}, null),
                 React.createElement('div', {className: 'contentCont'},
-                    React.createElement(Content, {content: content, className: 'content'}, null)),
+                    React.createElement('div', {className: 'content', onClick: props.onContentClick}, content)),
                 React.createElement('div', {className: 'addHr', onClick: props.connectionStart, title: 'Click to connect boxes!'},'+')
               )
      );
@@ -88,7 +94,7 @@ class MainComponent extends React.Component {
         this.connectionOn = false;
         this.dropped = false;
         this.position = {};
-        this.state = {tree: this.props.storage, connections: this.props.connections, linePopup: null, popup: null};
+        this.state = {tree: this.props.storage, connections: this.props.connections, linePopup: null, popup: null, contentPopup: null};
         //helper functions
         this.deepClone = this.deepClone.bind(this);
         this.getLinesCoord = this.getLinesCoord.bind(this);
@@ -138,12 +144,12 @@ class MainComponent extends React.Component {
         e = e || window.event;
         const parentId = parseInt(e.currentTarget.id[0]),
               childId = parseInt(e.currentTarget.id[1]);
+        e.preventDefault();
         e.stopPropagation();
-        // TODO: greyout description button, if desc already exists
+        
         if (this.state.connections[parentId][childId]['b'].description == null) {            
             this.setState({linePopup: Object.assign({}, {id: e.currentTarget.id, top: (e.pageY - 10) + 'px', left:(e.pageX - 50) + 'px'})});
         } else {
-            console.log(this.state.linePopup);
              this.setState({linePopup: Object.assign({}, {id: e.currentTarget.id, top: (e.pageY - 10) + 'px', left:(e.pageX - 50) + 'px'})});
         }
     }
@@ -171,7 +177,16 @@ class MainComponent extends React.Component {
             });
         this.setState({tree: Object.assign({}, newStateTree)});
     }
-    // TODO:...
+    onContentClick(obj, e) {
+        e = e || window.event;
+        e.stopPropagation();
+        if (obj.description != null) {            
+            this.setState({contentPopup: Object.assign({}, {id: obj.description, top: (e.pageY) + 'px', left:(e.pageX - 50) + 'px', width: '100px', height: '100px'})});
+        } else {
+            this.setState({contentPopup: Object.assign({}, {id: obj.content, top: (e.pageY - 250) + 'px', left:(e.pageX - 250) + 'px', width: '500px', height: '500px'})});
+        }
+    }
+    // TODO: no need yet
     onKeyDown(e) {
         e = e || window.event;
         //console.log(e.shiftKey);
@@ -216,7 +231,7 @@ class MainComponent extends React.Component {
     }
     onPopupOutClick(e) {
 
-        this.setState({linePopup: null});
+        this.setState({linePopup: null, contentPopup: null});
     }
     changeBoxSize(e) {
         if (this.connectionOn || this.dragElement != null) {return;}
@@ -411,7 +426,7 @@ class MainComponent extends React.Component {
         if ((newStateTree[parent.id].description || {})[target.id] != null) {
             // add the description object location data
             b = Object.assign({}, b, {description: {top: b.top,
-                                                    left: (parseInt(b.left) + (parseInt(b.w) / 2) - 50) +'px',
+                                                    left: bLen > 0 ? ((parseInt(b.left) + (parseInt(b.w)) - 50) +'px') : ((parseInt(b.left) - 50) +'px'),
                                                     text: newStateTree[parent.id].description[target.id].text
                                                     }
             });
@@ -433,31 +448,32 @@ class MainComponent extends React.Component {
                                                                         dragLeave: this.dragLeave.bind(this),
                                                                         dragDrop: this.switchContainers.bind(this),
                                                                         changeBoxSize: this.changeBoxSize.bind(this),
-                                                                        connectionStart: this.connectionStart.bind(this),
+                                                                        onContentClick: this.onContentClick.bind(this, {content: key}),
+                                                                        connectionStart: this.connectionStart.bind(this),                                                                        
                                                                         completeConnection: this.completeConnection.bind(this),
                                                                         rightClick: this.rightClick.bind(this)}, null));
                  }
             }
             // LINES
-            Object.keys(this.state.connections).forEach((key)=> {
-                Object.keys(this.state.connections[key]).forEach((key_)=> {
+            Object.keys(this.state.connections || []).forEach((key)=> {
+                Object.keys(this.state.connections[key] || []).forEach((key_)=> {
                     if (this.state.connections[key][key_]) {
-                        Object.keys(this.state.connections[key][key_]).forEach((key__)=> {
+                        Object.keys(this.state.connections[key][key_] || []).forEach((key__)=> {
                         const id = key+key_+key__;
                         elementsArr.push(React.createElement(Line, {key: id, id: id,
                                                                     onLineClick: this.lineClick.bind(this),
                                                                     onLineEnter: this.onLineEnter.bind(this),
                                                                     onLineLeave: this.onLineLeave.bind(this),
+                                                                    onContentClick: this.onContentClick.bind(this, {description: key+key_}),
                                                                     data: this.state.connections[key][key_][key__]
                                                                     }
                                                             )
                                         )
                         });
-                    }
-                    
+                    }                    
                 });
             });            
-            // POPUP
+            // LINE POPUP
             if (this.state.linePopup) {
                 elementsArr.push(React.createElement(LinePopup, {key: this.state.linePopup + '_linePopup',
                                                                  data: this.state.linePopup,
@@ -465,6 +481,15 @@ class MainComponent extends React.Component {
                                                                  onLineLeave: this.onLineLeave.bind(this),
                                                                  clickHandler: this.onPopupClick.bind(this)
                                                                 }
+                                                    )
+                                )
+            }
+            // CONTENT POPUP
+            if (this.state.contentPopup) {
+                elementsArr.push(React.createElement(ContentPopup, {key: 'contentPopup',
+                                                                    id: 'contentPopup',
+                                                                    data: this.state.contentPopup,
+                                                                    }
                                                     )
                                 )
             }
@@ -485,7 +510,7 @@ let connections = {
     0: {
         1: {
             a: {top: "150px", left: "750px", w: "20px",  deg: 90},
-            b: {top: "160px", left: "760px", w: "280px", deg:  0, description: {top: '160px', left: '850px', text: 'testiranje'}},
+            b: {top: "160px", left: "760px", w: "280px", deg:  0, description: {top: '160px', left: '990px', text: 'testiranje'}},
             c: {top: "218.5px", left: "979.5px", w: "122px", deg: 90}
         }
     }

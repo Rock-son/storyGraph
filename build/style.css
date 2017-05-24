@@ -31,19 +31,22 @@ body {
     -o-transition: top, left 0.3s 0s;
     transition: all 0.3s 0s, border .1s;
 }
-
 .header {
     position: relative;
     padding: 0 0 0 15px;
     cursor: all-scroll;
-    min-height: 1.7em;
-    max-height: 20%;
+    height: 1.7em;
     width: 100%;
 }
 .contentCont {
-    position: relative;
-    max-height: 90%;
+    position: absolute;
+    min-height: 50%;
     width: 100%;
+    top: 1.8em;
+    left: 0px;
+    right: 0px;
+    bottom: 1.1em;
+    cursor: pointer;
 }
 .content {
     position: relative;
@@ -123,6 +126,14 @@ body {
 }
 .desc-element:hover {
     cursor: pointer;
+}
+#contentPopup {
+    background-color: lightgrey;
+    -ms-transition: all .3s;
+    -moz-transition: all .3s;
+    -webkit-transition: all .3s;
+    transition: all .3s;    
+    border-radius: 5px;
 }
 .closeBtn {
     padding: 2px;
