@@ -128,12 +128,13 @@ body {
     cursor: pointer;
 }
 #contentPopup {
-    background-color: lightgrey;
+    background-color: #FFFFFF;
     -ms-transition: all .3s;
     -moz-transition: all .3s;
     -webkit-transition: all .3s;
     transition: all .3s;    
     border-radius: 5px;
+    border: 1px solid #CCC;
 }
 .closeBtn {
     padding: 2px;

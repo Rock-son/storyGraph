@@ -1,10 +1,26 @@
 'use strict'
+
 // ONCLICK CONTENT POPUP
 const ContentPopup = function (props) {
-    const style = {top: props.data.top, left: props.data.left, fontSize: '14px', position: 'absolute', zIndex: 100, width: props.data.width, height: props.data.height};
-    console.log(style);
-    return React.createElement('div', {key: props.key, id: props.id, style}, null);
+      const container = {top: props.data.top, left: props.data.left, fontSize: '14px', position: 'absolute', zIndex: 100, width: props.data.width, height: props.data.height},
+            header  = {height: '1.7em', border: 'none', color: '#333', backgroundColor: 'lightgrey'},
+            content = {position: 'absolute', minHeight: '50%', top: '1.8em', bottom: '1.1em'},
+            footer  = {height: '1em'},
+            hr = {color: 'lightgrey'};
+      
+      return React.createElement('div', {id: props.id, style: container}, 
+                React.createElement('input', {className: 'col-xs-12', style: header}, null),
+                React.createElement('hr', {style: hr}, null),
+                React.createElement('textArea', {className: 'col-xs-12', style: content}, null),
+                React.createElement('hr', {style: hr}, null),
+                React.createElement('footer', {style: footer}, null)
+             );
 };
+
+
+
+
+
 // CLICK-LINE POPUP
 const LinePopup = function(props) {
     const linePopupStyle = {top: props.data.top, left: props.data.left, fontSize: '14px'};
@@ -180,10 +196,11 @@ class MainComponent extends React.Component {
     onContentClick(obj, e) {
         e = e || window.event;
         e.stopPropagation();
+        console.log(obj.description, obj.content);
         if (obj.description != null) {            
-            this.setState({contentPopup: Object.assign({}, {id: obj.description, top: (e.pageY) + 'px', left:(e.pageX - 50) + 'px', width: '100px', height: '100px'})});
+            this.setState({contentPopup: Object.assign({}, {id: obj.description, data: this.state.tree[obj.description], top: (e.pageY) + 'px', left:(e.pageX - 50) + 'px', width: '200px', height: '100px'})});
         } else {
-            this.setState({contentPopup: Object.assign({}, {id: obj.content, top: (e.pageY - 250) + 'px', left:(e.pageX - 250) + 'px', width: '500px', height: '500px'})});
+            this.setState({contentPopup: Object.assign({}, {id: obj.content, data: this.state.tree[obj.content], top: (e.pageY - 10) + 'px', left:(e.pageX - 250) + 'px', width: '600px', height: '400px'})});
         }
     }
     // TODO: no need yet
@@ -230,8 +247,9 @@ class MainComponent extends React.Component {
         } 
     }
     onPopupOutClick(e) {
-
-        this.setState({linePopup: null, contentPopup: null});
+        if (e.target.getAttribute('class') === 'container') {
+            this.setState({linePopup: null, contentPopup: null});
+        }        
     }
     changeBoxSize(e) {
         if (this.connectionOn || this.dragElement != null) {return;}
@@ -494,7 +512,7 @@ class MainComponent extends React.Component {
                                 )
             }
         })();
-
+        // CONTAINER
         return React.createElement('div', {className: 'container',
                                            tabIndex: 1,
                                            onDragEnd: this.dragEnd.bind(this),
