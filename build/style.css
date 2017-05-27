@@ -78,7 +78,7 @@ body {
     -o-transition: top, left 0.3s 0s;
     transition: all 0.3s 0s;
 }
-.line-popup {
+.linePopup {
     position: absolute;
     width: 75px;
     height: auto;
@@ -127,7 +127,7 @@ body {
 .desc-element:hover {
     cursor: pointer;
 }
-#contentPopup {
+.contentPopup {
     background-color: #FFFFFF;
     -ms-transition: all .3s;
     -moz-transition: all .3s;
