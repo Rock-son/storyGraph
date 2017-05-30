@@ -199,21 +199,20 @@ class MainComponent extends React.Component {
         }
     }
     deleteContainer(delete_Id, e) {
-        // pure functions exercise
-        
+        // pure functions exercise        
         this.setState(
             
             {tree: Object.assign({}, Object.keys(this.state.tree)
                                                 .filter(id => +id !== +1)
                                                 .reduce((newObj, parentId) => Object.assign(newObj, {[parentId]: this.state.tree[parentId]}), {}),
+                                      // delete children value in deleted box's parents
                                       this.state.tree[delete_Id].parents
                                         	    .reduce((newObj, parentId) => Object.assign(newObj, {[parentId]: Object.assign({}, this.state.tree[parentId], 
                                                                                     {children: this.state.tree[parentId].children.filter(id => +id !== +delete_Id)} )}), {}),
+                                      // delete parent value in deleted box's children
                                       this.state.tree[delete_Id].children
                                         	    .reduce((newObj, childrenId) => Object.assign(newObj, {[childrenId]: Object.assign({}, this.state.tree[childrenId], 
-                                                                                    {parents: this.state.tree[childrenId].parents.filter(id => +id !== +delete_Id)} )}), {})
-                                                
-                                                ),
+                                                                                    {parents: this.state.tree[childrenId].parents.filter(id => +id !== +delete_Id)} )}), {})),
             // delete children connections (by deleting main connection) and check and delete all parent ones too!
             connections: Object.assign({}, Object.keys(this.state.connections)
                                                 .filter(id => +id !== +delete_Id)
