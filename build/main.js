@@ -15,7 +15,7 @@ const ContentPopup = function (props) {
       return React.createElement('div', {className: 'contentPopup', style: container}, 
                 React.createElement('input', {className: 'col-xs-12', style: header, onChange: props.onHeaderChange, value: headVal}, null),
                 React.createElement('hr', {style: hr}, null),
-                React.createElement('textArea', {className: 'col-xs-12', style: content, onChange: props.onContentChange, value: contentVal}, null),
+                React.createElement('textArea', {className: 'col-xs-12', style: content, onChange: props.onContentChange, value: contentVal}, dangerouslySetInnerHTML={__html: this.props.children}),
                 React.createElement('hr', {style: hr}, null),
                 React.createElement('footer', {style: footer}, null)
              );
@@ -69,7 +69,7 @@ const Line = function(props) {
 const Header = function(props) {
     const headerStyle = {backgroundColor: 'blue', borderBottom: '1px', borderBottomColor: 'cyan', color: 'white'},
           closeBtnStyle = {width: '17px', height: '15px', lineHeight: '8px', border: '1px outset white', color: 'white', 
-                            backgroundColor: 'red', float: 'right', paddingLeft: '3px'}; // if not changing, maybe put it in the style.css file
+                            backgroundColor: 'red', float: 'right', paddingLeft: '3px', cursor: 'pointer'}; // if not changing, maybe put it in the style.css file
 
     return (React.createElement('div', {className: props.className, onClick: props.completeConnection, style: headerStyle}, props.header,
                 React.createElement('div', {className: 'closeBtn', style: closeBtnStyle, onClick: props.deleteContainer}, 'x')
@@ -199,32 +199,33 @@ class MainComponent extends React.Component {
         }
     }
     deleteContainer(delete_Id, e) {
-        // pure functions exercise        
-        this.setState(
-            
-            {tree: Object.assign({}, Object.keys(this.state.tree)
-                                                .filter(id => +id !== +1)
-                                                .reduce((newObj, parentId) => Object.assign(newObj, {[parentId]: this.state.tree[parentId]}), {}),
-                                      // delete children value in deleted box's parents
-                                      this.state.tree[delete_Id].parents
-                                        	    .reduce((newObj, parentId) => Object.assign(newObj, {[parentId]: Object.assign({}, this.state.tree[parentId], 
-                                                                                    {children: this.state.tree[parentId].children.filter(id => +id !== +delete_Id)} )}), {}),
-                                      // delete parent value in deleted box's children
-                                      this.state.tree[delete_Id].children
-                                        	    .reduce((newObj, childrenId) => Object.assign(newObj, {[childrenId]: Object.assign({}, this.state.tree[childrenId], 
-                                                                                    {parents: this.state.tree[childrenId].parents.filter(id => +id !== +delete_Id)} )}), {})),
-            // delete children connections (by deleting main connection) and check and delete all parent ones too!
-            connections: Object.assign({}, Object.keys(this.state.connections)
-                                                .filter(id => +id !== +delete_Id)
-                                                .reduce((newObj, parentId) => Object.assign(newObj, {[parentId]: this.state.connections[parentId]}), {}),
-                                            this.state.tree[delete_Id].parents
-                                                .reduce((newObj, parentId) => Object.assign(newObj, 
-                                                        {[parentId]: Object.assign({}, Object.keys(this.state.connections[parentId]) // get all parent connections
-                                                                                   .filter(id => +id !== +delete_Id)                // filter the deleted one
-                                                                                   .reduce((newObj, parents_Id) => Object.assign(newObj, {[parents_Id]: this.state.connections[parentId][parents_Id]}), {})                                                                                    
-                                                                                  )}, {}), {}))
-                                    
-        });        
+        // pure functions exercise
+        if (confirm('Are you sure you want to delete this window?')) {
+            this.setState(               // reduce the deleted container
+                {tree: Object.assign({}, Object.keys(this.state.tree)
+                                                    .filter(id => +id !== +delete_Id)
+                                                    .reduce((newObj, parentId) => Object.assign(newObj, {[parentId]: this.state.tree[parentId]}), {}),
+                                        // delete children value in deleted box's parents array
+                                        this.state.tree[delete_Id].parents
+                                                    .reduce((newObj, parentId) => Object.assign(newObj, {[parentId]: Object.assign({}, this.state.tree[parentId], 
+                                                                                        {children: this.state.tree[parentId].children.filter(id => +id !== +delete_Id)} )}), {}),
+                                        // delete parent value in deleted box's children array
+                                        this.state.tree[delete_Id].children
+                                                    .reduce((newObj, childrenId) => Object.assign(newObj, {[childrenId]: Object.assign({}, this.state.tree[childrenId], 
+                                                                                        {parents: this.state.tree[childrenId].parents.filter(id => +id !== +delete_Id)} )}), {})),
+                                            // delete main connection and all the children with it
+                connections: Object.assign({}, Object.keys(this.state.connections)
+                                                    .filter(id => +id !== +delete_Id)
+                                                    .reduce((newObj, parentId) => Object.assign(newObj, {[parentId]: this.state.connections[parentId]}), {}),
+                                                this.state.tree[delete_Id].parents  // delete the parents 
+                                                    .reduce((newObj, parentId) => Object.assign(newObj, 
+                                                            {[parentId]: Object.assign({}, Object.keys(this.state.connections[parentId]) // get all parent connections
+                                                                                    .filter(id => +id !== +delete_Id)                // filter the deleted one
+                                                                                    .reduce((newObj, parents_Id) => Object.assign(newObj, {[parents_Id]: this.state.connections[parentId][parents_Id]}), {})                                                                                    
+                                                                                    )}, {}), {}))
+                                        
+            });
+        }        
     }
     lineClick(parent, target, e) {
         e = e || window.event;
