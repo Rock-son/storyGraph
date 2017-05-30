@@ -26,6 +26,7 @@ body {
     max-height: 300px;
     min-width: 120px;
     min-height: 60px;
+    overflow: hidden;
     -webkit-transition: top, left 0.3s 0s;
     -moz-transition: top, left 0.3s 0s;
     -o-transition: top, left 0.3s 0s;
@@ -37,6 +38,18 @@ body {
     cursor: all-scroll;
     height: 1.7em;
     width: 100%;
+    overflow: hidden;
+}
+.closeBtn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    padding: 2px;
+    font-weight: 700;
+    border-radius: 2px;
+}
+.closeBtn:hover {
+    cursor: default;
 }
 .contentCont {
     position: absolute;
@@ -47,13 +60,25 @@ body {
     right: 0px;
     bottom: 1.1em;
     cursor: pointer;
+    overflow: none;
 }
 .content {
+    min-width: 100%;
+    min-height: 70%;
     position: relative;
     padding: 0 15px;
     color: white;
     cursor: pointer;
     width: 100%;
+}
+.contentPopup {
+    background-color: #FFFFFF;
+    -ms-transition: all .3s;
+    -moz-transition: all .3s;
+    -webkit-transition: all .3s;
+    transition: all .3s;    
+    border-radius: 5px;
+    border: 1px solid #CCC;
 }
 .addHr {
     position: absolute;
@@ -126,21 +151,4 @@ body {
 }
 .desc-element:hover {
     cursor: pointer;
-}
-.contentPopup {
-    background-color: #FFFFFF;
-    -ms-transition: all .3s;
-    -moz-transition: all .3s;
-    -webkit-transition: all .3s;
-    transition: all .3s;    
-    border-radius: 5px;
-    border: 1px solid #CCC;
-}
-.closeBtn {
-    padding: 2px;
-    font-weight: 700;
-    border-radius: 2px;
-}
-.closeBtn:hover {
-    cursor: default;
 }

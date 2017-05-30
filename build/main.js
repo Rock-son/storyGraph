@@ -54,7 +54,6 @@ const Line = function(props) {
                                                  width: '100px',
                                                  maxHeight: '100px',
                                                  minHeight:'20px',
-                                                 position: 'absolute',
                                                  borderRadius: '5px'}
                                         }, props.data.description.text);
     } else {
@@ -70,10 +69,10 @@ const Line = function(props) {
 const Header = function(props) {
     const headerStyle = {backgroundColor: 'blue', borderBottom: '1px', borderBottomColor: 'cyan', color: 'white'},
           closeBtnStyle = {width: '17px', height: '15px', lineHeight: '8px', border: '1px outset white', color: 'white', 
-                            backgroundColor: 'red', float: 'right', margin: '5px 5px 0 0', paddingLeft: '3px'};
+                            backgroundColor: 'red', float: 'right', paddingLeft: '3px'}; // if not changing, maybe put it in the style.css file
 
     return (React.createElement('div', {className: props.className, onClick: props.completeConnection, style: headerStyle}, props.header,
-                React.createElement('div', {className: 'closeBtn', style: closeBtnStyle}, 'x')
+                React.createElement('div', {className: 'closeBtn', style: closeBtnStyle, onClick: props.deleteContainer}, 'x')
     ));
 };
 // BOX CONTAINER
@@ -98,7 +97,7 @@ const BoxContainer = function(props) {
                                         onDrop: props.dragDrop,
                                         onMouseUp: props.changeBoxSize},
                 // HEADER, TEXT AND LINE COMPONENT!
-                React.createElement(Header, {header: header, className: 'header', completeConnection: props.completeConnection}, null),
+                React.createElement(Header, {header: header, className: 'header', completeConnection: props.completeConnection, deleteContainer: props.deleteContainer}, null),
                 React.createElement('div', {className: 'contentCont'},
                     React.createElement('div', {className: 'content', onClick: props.onContentClick}, content)),
                 React.createElement('div', {className: 'addHr', onClick: props.connectionStart, title: 'Click to connect boxes!'},'+')
@@ -199,6 +198,37 @@ class MainComponent extends React.Component {
             });
         }
     }
+    deleteContainer(delete_Id, e) {
+        // pure functions exercise
+        console.log(this.state.tree[delete_Id].parents.reduce((cummulative, parentId) => Object.assign(cummulative, 
+                                                        {[parentId]: Object.assign({}, Object.keys(this.state.connections[parentId]) // get all parent connections
+                                                                                   .filter(id => id !== delete_Id)                // filter the deleted one
+                                                                                   .reduce((cummulative, parents_Id) => Object.assign(cummulative, {[parents_Id]: this.state.tree[parentId][parents_Id]}), {})                                                                                    
+                                                                                  )}, {})));
+                                                                                  return;
+
+        this.setState(
+            
+            {tree: Object.assign({}, Object.keys(this.state.tree)
+                                                .filter(id => +id !== +delete_Id)
+                                                .reduce((cummulative, parentId) => Object.assign(cummulative, {[parentId]: this.state.tree[parentId]}), {})
+                                                            
+                                                            
+                                                            
+                                                            ),
+            // delete children connections (by deleting main connection) and check and delete all parent ones too!
+            connections: Object.assign({}, Object.keys(this.state.connections)
+                                                .filter(id => +id !== +delete_Id)
+                                                .reduce((cummulative, parentId) => Object.assign(cummulative, {[parentId]: this.state.connections[parentId]}), {}),
+                                            this.state.tree[delete_Id].parents
+                                                .reduce((cummulative, parentId) => Object.assign(cummulative, 
+                                                        {[parentId]: Object.assign({}, Object.keys(this.state.connections[parentId]) // get all parent connections
+                                                                                   .filter(id => id !== delete_Id)                // filter the deleted one
+                                                                                   .reduce((cummulative, parents_Id) => Object.assign(cummulative, {[parents_Id]: this.state.tree[parentId][parents_Id]}), {})                                                                                    
+                                                                                  )}, {})))
+                                    
+        });        
+    }
     lineClick(parent, target, e) {
         e = e || window.event;
         e.preventDefault();
@@ -273,22 +303,6 @@ class MainComponent extends React.Component {
                 this.setState({linePopup: null, connections: updateConnections, tree: updateTree});
                 break;
             case 'DESCRIBE':
-                /*const parentEl = this.state.tree[parentId],
-                      childEl  = this.state.tree[childId],
-                      _updateTree = Object.assign({}, this.state.tree,  
-                                            {[parentId]: Object.assign({}, this.state.tree[parentId],
-                                                    {style: Object.assign({}, this.state.tree[parentId].style, {border: '1px solid blue'})},
-                                                    {description: Object.assign({}, this.state.tree[parentId].description, 
-                                                            {[childId]: Object.assign({}, this.state.tree[parentId].description[childId], {text: e.target.value})})                                                            
-                                                    }
-                      )}),
-                      _pdateTree = Object.assign({}, this.state.tree, 
-                                        {[parentId]: Object.assign({}, this.state.tree[parentId], 
-                                                {description: Object.assign({}, this.state.tree[parentId].description, {[childId]: {text: 'testing.... na kvadrat'}}), style: {border: '1px solid blue'}})}
-                                   ),
-                      _updateConnections = Object.assign({}, this.state.connections, 
-                                                            {[parentId]: Object.assign({}, this.state.connections[parentId], 
-                                                                    {[childId]: this.calculateConnection(parentEl, childEl, _updateTree)})});  */
                 const contentPopup = Object.assign({}, {parent: parentId, target: childId, data: this.state.tree[parentId], top: (e.pageY) + 'px', left:(e.pageX - 50) + 'px', width: '20vw', height: '10vh'});
        
                 this.setState({linePopup: null, contentPopup});
@@ -523,6 +537,7 @@ class MainComponent extends React.Component {
                                                                         onContentClick: this.onContentClick.bind(this, {content: parentId}),
                                                                         connectionStart: this.connectionStart.bind(this, parentId),                                                                        
                                                                         completeConnection: this.completeConnection.bind(this, parentId),
+                                                                        deleteContainer: this.deleteContainer.bind(this, parentId),
                                                                         rightClick: this.rightClick.bind(this)}, null));
                  }
             }
@@ -564,7 +579,7 @@ class MainComponent extends React.Component {
                                                                     data: this.state.contentPopup,
                                                                     header: this.state.tree[ parentId ].header,
                                                                     content: this.state.tree[ parentId ].content,
-                                                                    description: targetId == null ? null : this.state.tree[ parentId ].description[ targetId ].text,
+                                                                    description: this.state.tree[ parentId ].description[ targetId ] == null ? null : this.state.tree[ parentId ].description[ targetId ].text,
                                                                     onHeaderChange: this.onHeaderChange.bind(this, parentId, targetId),                                                                    
                                                                     onContentChange: this.onContentChange.bind(this, parentId, targetId)
                                                                     }
