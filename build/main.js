@@ -200,32 +200,30 @@ class MainComponent extends React.Component {
     }
     deleteContainer(delete_Id, e) {
         // pure functions exercise
-        console.log(this.state.tree[delete_Id].parents.reduce((cummulative, parentId) => Object.assign(cummulative, 
-                                                        {[parentId]: Object.assign({}, Object.keys(this.state.connections[parentId]) // get all parent connections
-                                                                                   .filter(id => id !== delete_Id)                // filter the deleted one
-                                                                                   .reduce((cummulative, parents_Id) => Object.assign(cummulative, {[parents_Id]: this.state.tree[parentId][parents_Id]}), {})                                                                                    
-                                                                                  )}, {})));
-                                                                                  return;
-
+        
         this.setState(
             
             {tree: Object.assign({}, Object.keys(this.state.tree)
-                                                .filter(id => +id !== +delete_Id)
-                                                .reduce((cummulative, parentId) => Object.assign(cummulative, {[parentId]: this.state.tree[parentId]}), {})
-                                                            
-                                                            
-                                                            
-                                                            ),
+                                                .filter(id => +id !== +1)
+                                                .reduce((newObj, parentId) => Object.assign(newObj, {[parentId]: this.state.tree[parentId]}), {}),
+                                      this.state.tree[delete_Id].parents
+                                        	    .reduce((newObj, parentId) => Object.assign(newObj, {[parentId]: Object.assign({}, this.state.tree[parentId], 
+                                                                                    {children: this.state.tree[parentId].children.filter(id => +id !== +delete_Id)} )}), {}),
+                                      this.state.tree[delete_Id].children
+                                        	    .reduce((newObj, childrenId) => Object.assign(newObj, {[childrenId]: Object.assign({}, this.state.tree[childrenId], 
+                                                                                    {parents: this.state.tree[childrenId].parents.filter(id => +id !== +delete_Id)} )}), {})
+                                                
+                                                ),
             // delete children connections (by deleting main connection) and check and delete all parent ones too!
             connections: Object.assign({}, Object.keys(this.state.connections)
                                                 .filter(id => +id !== +delete_Id)
-                                                .reduce((cummulative, parentId) => Object.assign(cummulative, {[parentId]: this.state.connections[parentId]}), {}),
+                                                .reduce((newObj, parentId) => Object.assign(newObj, {[parentId]: this.state.connections[parentId]}), {}),
                                             this.state.tree[delete_Id].parents
-                                                .reduce((cummulative, parentId) => Object.assign(cummulative, 
+                                                .reduce((newObj, parentId) => Object.assign(newObj, 
                                                         {[parentId]: Object.assign({}, Object.keys(this.state.connections[parentId]) // get all parent connections
-                                                                                   .filter(id => id !== delete_Id)                // filter the deleted one
-                                                                                   .reduce((cummulative, parents_Id) => Object.assign(cummulative, {[parents_Id]: this.state.tree[parentId][parents_Id]}), {})                                                                                    
-                                                                                  )}, {})))
+                                                                                   .filter(id => +id !== +delete_Id)                // filter the deleted one
+                                                                                   .reduce((newObj, parents_Id) => Object.assign(newObj, {[parents_Id]: this.state.connections[parentId][parents_Id]}), {})                                                                                    
+                                                                                  )}, {}), {}))
                                     
         });        
     }
