@@ -174,9 +174,19 @@ class MainComponent extends React.Component {
         this.setState({tree: Object.assign({}, this.startingPos), connections: Object.assign({}, this.startingConn)});
     }
     addBoxContainer(e) {
-        
-        
-
+        const lastIndex = parseInt(Object.keys(this.state.tree).sort((a,b)=> +a > +b).slice(-1)[0]) + 1;
+        this.setState({tree: Object.assign({}, this.state.tree, {[lastIndex]: {id: lastIndex,
+                                                                               parents: [],
+                                                                               children: [],
+                                                                               header: 'header' + lastIndex,
+                                                                               content: 'option',
+                                                                               style: {border: '1px solid blue'},
+                                                                               position: {left: '10px', top: '110px'},
+                                                                               size: {width: '120px', height: '100px'},
+                                                                               description: {}
+                                                                    }
+                                     })
+        });
     }
     onHeaderChange(parent, target, e) {
                
@@ -625,8 +635,7 @@ let connections = {
 };
 
 let storage = {
-    0: {
-        id: 0,
+    0: {id: 0,
         parents: [],
         children: [1],
         header:"header0", 
@@ -636,8 +645,7 @@ let storage = {
         size: {width: '120px', height: '100px'},
         description: {1: {text: "testiranje"}}
      },
-     1: {
-        id: 1,
+     1: {id: 1,
         parents: [0],
         children: [],
         header:"header1", 
@@ -647,8 +655,7 @@ let storage = {
         size: {width: '120px', height: '100px'},
         description: {}
      }, 
-     2: { 
-        id: 2,
+     2: {id: 2,
         parents: [],
         children: [],
         header:"header2", 
@@ -658,8 +665,7 @@ let storage = {
         size: {width: '120px', height: '100px'},
         description: {}
      }, 
-     3: { 
-        id: 3,
+     3: {id: 3,
         parents: [],
         children: [],
         header:"header3", 
