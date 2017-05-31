@@ -2,28 +2,27 @@
 
 // ONCLICK CONTENT POPUP
 const ContentPopup = function (props) {
-      const container = {top: props.data.top, left: props.data.left, fontSize: '14px', position: 'absolute', zIndex: 100, width: props.data.width, height: props.data.height},
-            header  = {height: '1.7em', border: 'none', color: '#333', backgroundColor: 'lightgrey'},
-            content = {position: 'absolute', minHeight: '80%', top: '1.8em', bottom: '1.1em'},
+      const container = {position: 'absolute', top: props.data.top, left: props.data.left, fontSize: '14px', resize: 'both', overflow: 'hidden', zIndex: 100, width: props.data.width, height: props.data.height},
+            header  = {position: 'relative', height: '1.7em', top: '0', left: '0', right: '0', color: '#333', backgroundColor: 'lightgrey'},
+            hr = {position: 'relative', color: 'lightgrey'},
+            content = {position: 'relative', resize: 'none', top: '0', bottom: '5px', right: '5px', left: '5px'},
             footer  = {height: '1em'},
-            hr = {color: 'lightgrey'},
             // if props.data.target doesn't exist, it's box, else description
             headVal = props.data.target == null ? props.header : "",
-            contentVal = props.data.target == null ? props.content : props.description;
-
+            contentVal = props.data.target == null ? props.content : props.description,
+            bool = true,
+            markUp = function (value) {
+                        var rawMarkup = marked(value, {sanitize: true})
+                        return {__html: rawMarkup};
+            }
       
       return React.createElement('div', {className: 'contentPopup', style: container}, 
-                React.createElement('input', {className: 'col-xs-12', style: header, onChange: props.onHeaderChange, value: headVal}, null),
+                React.createElement('input', {className: 'headerArea col-xs-12', style: header, onChange: props.onHeaderChange, value: headVal}, null),
                 React.createElement('hr', {style: hr}, null),
-                React.createElement('textArea', {className: 'col-xs-12', style: content, onChange: props.onContentChange, value: contentVal}, dangerouslySetInnerHTML={__html: this.props.children}),
-                React.createElement('hr', {style: hr}, null),
+                React.createElement('textArea', {className: 'textArea', style: content, onChange: props.onContentChange, value: contentVal}, null),
                 React.createElement('footer', {style: footer}, null)
              );
 };
-
-
-
-
 
 // CLICK-LINE POPUP
 const LinePopup = function(props) {
@@ -35,6 +34,7 @@ const LinePopup = function(props) {
                  React.createElement('div', {action: 'DELETE', style: {cursor: 'pointer', color: 'red'}, className: 'popup-element', onClickCapture: props.onPopupClick}, 'DELETE')
     ));
 };
+
 // CONNECTING LINES
 const Line = function(props) {
     const lineStyle = {width: props.data.w, top: props.data.top, left: props.data.left, position: 'absolute', zIndex: 0, msTransform: "rotate(" + props.data.deg + "deg)", 
@@ -65,6 +65,7 @@ const Line = function(props) {
                 descriptionElement
     ));
 }
+
 // HEADER
 const Header = function(props) {
     const headerStyle = {backgroundColor: 'blue', borderBottom: '1px', borderBottomColor: 'cyan', color: 'white'},
@@ -75,6 +76,7 @@ const Header = function(props) {
                 React.createElement('div', {className: 'closeBtn', style: closeBtnStyle, onClick: props.deleteContainer}, 'x')
     ));
 };
+
 // BOX CONTAINER
 const BoxContainer = function(props) {
     
@@ -103,6 +105,14 @@ const BoxContainer = function(props) {
                 React.createElement('div', {className: 'addHr', onClick: props.connectionStart, title: 'Click to connect boxes!'},'+')
               )
      );
+};
+// BUTTON FOR ADDING NEW WINDOW BOXES
+const addBtn = function(props) {
+
+    const btnStyle = {position: 'absolute', top: '50px', left: '15px', width: '100px', height: '50px;', color: 'white', backgroundColor: 'green', 
+                        fontWeight: 700, padding: '5px', borderRadius: '5px'};
+
+    return (React.createElement('button', {className: 'addBtn', onClick: props.addBoxContainer, style: btnStyle}, props.children));
 };
 
 //main component: Higher Order Component - HOC
@@ -162,6 +172,11 @@ class MainComponent extends React.Component {
         e.stopPropagation();
         e.preventDefault();
         this.setState({tree: Object.assign({}, this.startingPos), connections: Object.assign({}, this.startingConn)});
+    }
+    addBoxContainer(e) {
+        
+        
+
     }
     onHeaderChange(parent, target, e) {
                
@@ -592,7 +607,8 @@ class MainComponent extends React.Component {
                                            onDragOver: this.dragOver.bind(this),
                                            onClick: this.onPopupOutClick.bind(this),
                                            onKeyDown: this.onKeyDown.bind(this),
-                                           onContextMenu: this.rightClick.bind(this)}, null,
+                                           onContextMenu: this.rightClick.bind(this)},
+                                    React.createElement(addBtn, {addBoxContainer: this.addBoxContainer.bind(this)}, 'Add new Window'),
                                     elementsArr );
     }
 }
