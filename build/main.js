@@ -19,6 +19,7 @@ const ContentPopup = function (props) {
       return React.createElement('div', {className: 'contentPopup', style: container}, 
                 React.createElement('input', {className: 'headerArea col-xs-12', style: header, onChange: props.onHeaderChange, value: headVal}, null),
                 React.createElement('hr', {style: hr}, null),
+                /*React.createElement(Draft.Editor, {className: 'textArea', style: content, editorState:props.editorData, onChange:props.onEditorChange}, null),*/    
                 React.createElement('textArea', {className: 'textArea', style: content, onChange: props.onContentChange, value: contentVal}, null),
                 React.createElement('footer', {style: footer}, null)
              );
@@ -109,7 +110,7 @@ const BoxContainer = function(props) {
 // BUTTON FOR ADDING NEW WINDOW BOXES
 const addBtn = function(props) {
 
-    const btnStyle = {position: 'absolute', top: '50px', left: '15px', width: '100px', height: '50px;', color: 'white', backgroundColor: 'green', 
+    const btnStyle = {position: 'absolute', top: '50px', left: '15px', width: '100px', height: '50px', color: 'white', backgroundColor: 'green', 
                         fontWeight: 700, padding: '5px', borderRadius: '5px'};
 
     return (React.createElement('button', {className: 'addBtn', onClick: props.addBoxContainer, style: btnStyle}, props.children));
@@ -127,7 +128,7 @@ class MainComponent extends React.Component {
         this.connectionOn = false;
         this.dropped = false;
         this.position = {};
-        this.state = {tree: this.props.storage, connections: this.props.connections, linePopup: null, popup: null, contentPopup: null};
+        this.state = {editorState: Draft.EditorState.createEmpty(), tree: this.props.storage, connections: this.props.connections, linePopup: null, popup: null, contentPopup: null};
         //helper functions
         this.deepClone = this.deepClone.bind(this);
         this.getLinesCoord = this.getLinesCoord.bind(this);
@@ -135,6 +136,7 @@ class MainComponent extends React.Component {
     }
     componentDidMount () {
         document.getElementsByClassName('container')[0].focus();
+        console.log(this.state.editorState.toJS());
     }
     componentWillUnmount() {
     }
@@ -172,6 +174,9 @@ class MainComponent extends React.Component {
         e.stopPropagation();
         e.preventDefault();
         this.setState({tree: Object.assign({}, this.startingPos), connections: Object.assign({}, this.startingConn)});
+    }
+    onEditorChange(editorState) {
+        this.setState({editorState});
     }
     addBoxContainer(e) {
         const lastIndex = parseInt(Object.keys(this.state.tree).sort((a,b)=> +a > +b).slice(-1)[0]) + 1;
@@ -604,7 +609,9 @@ class MainComponent extends React.Component {
                                                                     content: this.state.tree[ parentId ].content,
                                                                     description: this.state.tree[ parentId ].description[ targetId ] == null ? null : this.state.tree[ parentId ].description[ targetId ].text,
                                                                     onHeaderChange: this.onHeaderChange.bind(this, parentId, targetId),                                                                    
-                                                                    onContentChange: this.onContentChange.bind(this, parentId, targetId)
+                                                                    onContentChange: this.onContentChange.bind(this, parentId, targetId),
+                                                                    onEditorChange: this.onEditorChange.bind(this, parentId, targetId),
+                                                                    editorData: this.state.editorState
                                                                     }
                                                     )
                                 )
