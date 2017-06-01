@@ -19,8 +19,8 @@ const ContentPopup = function (props) {
       return React.createElement('div', {className: 'contentPopup', style: container}, 
                 React.createElement('input', {className: 'headerArea col-xs-12', style: header, onChange: props.onHeaderChange, value: headVal}, null),
                 React.createElement('hr', {style: hr}, null),
-                /*React.createElement(Draft.Editor, {className: 'textArea', style: content, editorState:props.editorData, onChange:props.onEditorChange}, null),*/    
-                React.createElement('textArea', {className: 'textArea', style: content, onChange: props.onContentChange, value: contentVal}, null),
+                React.createElement(Draft.Editor, {className: 'textArea', style: content, editorState:props.editorData, onChange:props.onEditorChange}, null),    
+                /*React.createElement('textArea', {className: 'textArea', style: content, onChange: props.onContentChange, value: contentVal}, null),*/
                 React.createElement('footer', {style: footer}, null)
              );
 };
