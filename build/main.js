@@ -175,7 +175,7 @@ class MainComponent extends React.Component {
         e.preventDefault();
         this.setState({tree: Object.assign({}, this.startingPos), connections: Object.assign({}, this.startingConn)});
     }
-    onEditorChange(editorState) {
+    onEditorChange(parent, target, editorState) {
         this.setState({editorState});
     }
     addBoxContainer(e) {
