@@ -1,0 +1,26 @@
+{
+  "name": "story-graph",
+  "version": "1.0.0",
+  "description": "* libs used: React, ReactDOM, Immutable.js, Draft.js",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rock-son/storyGraph.git"
+  },
+  "author": "rz",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Rock-son/storyGraph/issues"
+  },
+  "homepage": "https://github.com/Rock-son/storyGraph#readme",
+  "dependencies": {
+    "draft": "^0.2.3",
+    "es6-shim": "^0.35.3",
+    "immutable": "^3.8.1",
+    "react": "^15.5.4",
+    "react-dom": "^15.5.4"
+  }
+}
