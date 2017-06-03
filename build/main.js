@@ -11,16 +11,14 @@ const ContentPopup = function (props) {
             headVal = props.data.target == null ? props.header : "",
             contentVal = props.data.target == null ? props.content : props.description,
             bool = true,
-            markUp = function (value) {
-                        var rawMarkup = marked(value, {sanitize: true})
-                        return {__html: rawMarkup};
-            }
+            ReactEditorElement = props.editorData != null ? React.createElement(Draft.Editor, {className: 'textArea', style: content, editorState: props.editorData, onChange: props.onEditorChange}, null) :
+                                                    React.createElement('textArea', {className: 'textArea', style: content, onChange: props.onContentChange, value: contentVal}, null)
+            
       
       return React.createElement('div', {className: 'contentPopup', style: container}, 
                 React.createElement('input', {className: 'headerArea col-xs-12', style: header, onChange: props.onHeaderChange, value: headVal}, null),
                 React.createElement('hr', {style: hr}, null),
-                React.createElement(Draft.Editor, {className: 'textArea', style: content, editorState:props.editorData, onChange:props.onEditorChange}, null),    
-                /*React.createElement('textArea', {className: 'textArea', style: content, onChange: props.onContentChange, value: contentVal}, null),*/
+                ReactEditorElement,
                 React.createElement('footer', {style: footer}, null)
              );
 };
@@ -128,7 +126,7 @@ class MainComponent extends React.Component {
         this.connectionOn = false;
         this.dropped = false;
         this.position = {};
-        this.state = {editorState: Draft.EditorState.createEmpty(), tree: this.props.storage, connections: this.props.connections, linePopup: null, popup: null, contentPopup: null};
+        this.state = {editorStates: {}, tree: this.props.storage, connections: this.props.connections, linePopup: null, popup: null, contentPopup: null};
         //helper functions
         this.deepClone = this.deepClone.bind(this);
         this.getLinesCoord = this.getLinesCoord.bind(this);
@@ -136,7 +134,6 @@ class MainComponent extends React.Component {
     }
     componentDidMount () {
         document.getElementsByClassName('container')[0].focus();
-        console.log(this.state.editorState.toJS());
     }
     componentWillUnmount() {
     }
@@ -176,7 +173,33 @@ class MainComponent extends React.Component {
         this.setState({tree: Object.assign({}, this.startingPos), connections: Object.assign({}, this.startingConn)});
     }
     onEditorChange(parent, target, editorState) {
-        this.setState({editorState});
+        this.setState({editorStates: Object.assign({}, this.state.editorStates, {[parent]: editorState})});
+    }
+    onContentChange(parent, target, e) {
+        // if target is null, change content
+        if (target == null) {
+            this.setState({tree: Object.assign({}, this.state.tree,  
+                                            {[parent]: Object.assign({}, this.state.tree[parent], 
+                                                    {content: e.target.value})
+                            })
+            })            
+        // if target not null, change description!
+        } else if (target != null) {
+            const parentEl = this.state.tree[parent],
+                    childEl  = this.state.tree[target],            
+                    treeUpdate = Object.assign({}, this.state.tree,  
+                                        {[parent]: Object.assign({}, this.state.tree[parent], 
+                                                {description: Object.assign({}, this.state.tree[parent].description, 
+                                                        {[target]: Object.assign({}, this.state.tree[parent].description[target], {text: e.target.value})})                                                
+                                        }
+                        )}
+            );
+            this.setState({tree: treeUpdate, 
+                            connections: Object.assign({}, this.state.connections, 
+                                        {[parent]: Object.assign({}, this.state.connections[parent], 
+                                                {[target]: this.calculateConnection(parentEl, childEl, treeUpdate)})})
+            });
+        }
     }
     addBoxContainer(e) {
         const lastIndex = parseInt(Object.keys(this.state.tree).sort((a,b)=> +a > +b).slice(-1)[0]) + 1;
@@ -202,32 +225,8 @@ class MainComponent extends React.Component {
                           });
         }
     }
-    onContentChange(parent, target, e) {
-        // if target is null, change content
-        if (target == null) {
-            this.setState({tree: Object.assign({}, this.state.tree,  
-                                            {[parent]: Object.assign({}, this.state.tree[parent], 
-                                                    {content: e.target.value})
-                          })
-            })            
-        // if target not null, change description!
-        } else if (target != null) {
-            const parentEl = this.state.tree[parent],
-                  childEl  = this.state.tree[target],            
-                  treeUpdate = Object.assign({}, this.state.tree,  
-                                            {[parent]: Object.assign({}, this.state.tree[parent], 
-                                                    {description: Object.assign({}, this.state.tree[parent].description, 
-                                                            {[target]: Object.assign({}, this.state.tree[parent].description[target], {text: e.target.value})})                                                
-                                            }
-                            )}
-                );
-                this.setState({tree: treeUpdate, 
-                               connections: Object.assign({}, this.state.connections, 
-                                          {[parent]: Object.assign({}, this.state.connections[parent], 
-                                                    {[target]: this.calculateConnection(parentEl, childEl, treeUpdate)})})
-            });
-        }
-    }
+    //TODO: for evaluation due to Draft.js lib!
+
     deleteContainer(delete_Id, e) {
         // pure functions exercise
         if (confirm('Are you sure you want to delete this window?')) {
@@ -296,10 +295,11 @@ class MainComponent extends React.Component {
     onContentClick(obj, e) {
         e = e || window.event;
         e.stopPropagation();
-        if (obj.description != null) {
+        if (obj.description != null) {            
             this.setState({contentPopup: Object.assign({}, {parent: obj.description[0], target: obj.description[1], data: this.state.tree[obj.description[0]], top: (e.pageY) + 'px', left:(e.pageX - 50) + 'px', width: '20vw', height: '10vh'})});
         } else {
-            this.setState({contentPopup: Object.assign({}, {parent: obj.content, target: null, data: this.state.tree[obj.content], top: (e.pageY - 10) + 'px', left:(e.pageX - 250) + 'px', width: '60vw', height: '40vh'})});
+            this.setState({ editorStates: Object.assign({}, this.state.editorStates, {[obj.content]: this.state.editorStates[obj.content] == null ? Draft.EditorState.createEmpty() : this.state.editorStates[obj.content]}),
+                            contentPopup: Object.assign({}, {parent: obj.content, target: null, data: this.state.tree[obj.content], top: (e.pageY - 10) + 'px', left:(e.pageX - 250) + 'px', width: '60vw', height: '40vh'})});
         }
     }
     // TODO: no need yet
@@ -602,7 +602,8 @@ class MainComponent extends React.Component {
             // CONTENT_POPUP
             if (this.state.contentPopup) {
                 const parentId = this.state.contentPopup.parent,
-                      targetId = this.state.contentPopup.target;                      
+                      targetId = this.state.contentPopup.target;
+                console.log(targetId);
                 elementsArr.push(React.createElement(ContentPopup, {key: 'contentPopup',
                                                                     data: this.state.contentPopup,
                                                                     header: this.state.tree[ parentId ].header,
@@ -611,7 +612,7 @@ class MainComponent extends React.Component {
                                                                     onHeaderChange: this.onHeaderChange.bind(this, parentId, targetId),                                                                    
                                                                     onContentChange: this.onContentChange.bind(this, parentId, targetId),
                                                                     onEditorChange: this.onEditorChange.bind(this, parentId, targetId),
-                                                                    editorData: this.state.editorState
+                                                                    editorData: targetId == null ? this.state.editorStates[parentId] : null
                                                                     }
                                                     )
                                 )
@@ -683,7 +684,6 @@ let storage = {
         description: {}
      }
 };
-
 
 document.addEventListener("DOMContentLoaded", function(e) {
     ReactDOM.render(React.createElement(MainComponent, {storage, connections}, null), document.getElementById('root'));
