@@ -1,28 +1,38 @@
 'use strict'
+// BUTTON FOR ADDING NEW WINDOW BOXES
+const AddBtn = function(props) {
 
+    const btnStyle = {position: 'absolute', top: '50px', left: '15px', width: '100px', height: '50px', color: 'white', backgroundColor: 'green', 
+                        fontWeight: 700, padding: '5px', borderRadius: '5px'};
+
+    return (React.createElement('button', {className: 'addBtn', onClick: props.addBoxContainer, style: btnStyle}, props.children));
+};
 // ONCLICK CONTENT POPUP
 const ContentPopup = function (props) {
-      const container = {position: 'absolute', top: props.data.top, left: props.data.left, fontSize: '14px', resize: 'both', overflow: 'hidden', zIndex: 100, width: props.data.width, height: props.data.height},
-            header  = {position: 'relative', height: '1.7em', top: '0', left: '0', right: '0', color: '#333', backgroundColor: 'lightgrey'},
+      const container = props.clickedOn === 'content' ? {position: 'absolute', top: '20px', left: '15px', right: '15px', bottom: '20px', fontSize: '14px', resize: 'both', zIndex: 100, overflow: 'auto'} :
+                                                        {position: 'absolute', top: props.data.top, left: props.data.left, fontSize: '14px', resize: 'both', zIndex: 100, width: '240px', overflow: 'auto'} ,
+            header  = {position: 'relative', height: '2em', top: '0', left: '0', right: '0', color: '#333', backgroundColor: 'lightgrey'},
             hr = {position: 'relative', color: 'lightgrey'},
-            content = {position: 'relative', resize: 'none', top: '0', bottom: '5px', right: '5px', left: '5px'},
-            footer  = {height: '1em'},
+            content = {position: 'relative', padding: props.clickedOn === 'content' ? '20px' : '10px', minHeight: '80%', width: '100%', resize: 'none', top: '0', bottom: '0px', right: '0px', left: '0px', color: props.clickedOn === 'content' ? 'white' : '#333'},
+            footer  = {position: 'relative', height: '1em', backgroundColor: '#FFF'},
             // if props.data.target doesn't exist, it's box, else description
-            headVal = props.data.target == null ? props.header : "",
-            contentVal = props.data.target == null ? props.content : props.description,
+            headVal = props.clickedOn === 'content' ? props.parentHeader : props.parentHeader + ' --> ' + props.targetHeader,
+            contentVal = props.clickedOn === 'content' ? props.content : props.description,
             bool = true,
-            ReactEditorElement = props.editorData != null ? React.createElement(Draft.Editor, {className: 'textArea', style: content, editorState: props.editorData, onChange: props.onEditorChange}, null) :
-                                                    React.createElement('textArea', {className: 'textArea', style: content, onChange: props.onContentChange, value: contentVal}, null)
-            
+
+            closeElement = React.createElement('div', {className: 'closePopup', onClick: props.closeContent}, 'X'),
+            ReactInputElement = props.clickedOn === 'description' ? React.createElement('input', {className: 'headerCont', style: header, disabled: true, value: headVal}, null) :
+                                                                        React.createElement('input', {className: 'headerCont', style: header, onChange: props.onHeaderChange, value: headVal}, null),
+            ReactEditorElement = props.clickedOn === 'content' ? React.createElement('div', {style: content}, React.createElement(Draft.Editor, {editorState: props.editorData, onChange: props.onEditorChange}, null)) :
+                                                                        React.createElement('textArea', {className: 'textArea', style: content, onChange: props.onContentChange, value: contentVal}, null);
+
       
       return React.createElement('div', {className: 'contentPopup', style: container}, 
-                React.createElement('input', {className: 'headerArea col-xs-12', style: header, onChange: props.onHeaderChange, value: headVal}, null),
-                React.createElement('hr', {style: hr}, null),
-                ReactEditorElement,
-                React.createElement('footer', {style: footer}, null)
+                ReactInputElement, closeElement,
+                ReactEditorElement
+                /*React.createElement('footer', {style: footer}, null)*/
              );
 };
-
 // CLICK-LINE POPUP
 const LinePopup = function(props) {
     const linePopupStyle = {top: props.data.top, left: props.data.left, fontSize: '14px'};
@@ -33,7 +43,6 @@ const LinePopup = function(props) {
                  React.createElement('div', {action: 'DELETE', style: {cursor: 'pointer', color: 'red'}, className: 'popup-element', onClickCapture: props.onPopupClick}, 'DELETE')
     ));
 };
-
 // CONNECTING LINES
 const Line = function(props) {
     const lineStyle = {width: props.data.w, top: props.data.top, left: props.data.left, position: 'absolute', zIndex: 0, msTransform: "rotate(" + props.data.deg + "deg)", 
@@ -64,7 +73,6 @@ const Line = function(props) {
                 descriptionElement
     ));
 }
-
 // HEADER
 const Header = function(props) {
     const headerStyle = {backgroundColor: 'blue', borderBottom: '1px', borderBottomColor: 'cyan', color: 'white'},
@@ -75,7 +83,6 @@ const Header = function(props) {
                 React.createElement('div', {className: 'closeBtn', style: closeBtnStyle, onClick: props.deleteContainer}, 'x')
     ));
 };
-
 // BOX CONTAINER
 const BoxContainer = function(props) {
     
@@ -100,18 +107,10 @@ const BoxContainer = function(props) {
                 // HEADER, TEXT AND LINE COMPONENT!
                 React.createElement(Header, {header: header, className: 'header', completeConnection: props.completeConnection, deleteContainer: props.deleteContainer}, null),
                 React.createElement('div', {className: 'contentCont'},
-                    React.createElement('div', {className: 'content', onClick: props.onContentClick}, content)),
+                    React.createElement('div', {style:{minHeight: '80%', width: '100%', color: 'white', padding: '0 15px'}, onClick: props.onContentClick}, content)),
                 React.createElement('div', {className: 'addHr', onClick: props.connectionStart, title: 'Click to connect boxes!'},'+')
               )
      );
-};
-// BUTTON FOR ADDING NEW WINDOW BOXES
-const addBtn = function(props) {
-
-    const btnStyle = {position: 'absolute', top: '50px', left: '15px', width: '100px', height: '50px', color: 'white', backgroundColor: 'green', 
-                        fontWeight: 700, padding: '5px', borderRadius: '5px'};
-
-    return (React.createElement('button', {className: 'addBtn', onClick: props.addBoxContainer, style: btnStyle}, props.children));
 };
 
 //main component: Higher Order Component - HOC
@@ -217,16 +216,12 @@ class MainComponent extends React.Component {
         });
     }
     onHeaderChange(parent, target, e) {
-               
-        if (target == null) {
-            this.setState({tree: Object.assign({}, this.state.tree,  
-                                            {[parent]: Object.assign({}, this.state.tree[parent], 
-                                                    {header: e.target.value})})                                                
-                          });
-        }
+        this.setState({tree: Object.assign({}, this.state.tree,  
+                                        {[parent]: Object.assign({}, this.state.tree[parent], 
+                                                {header: e.target.value})})                                                
+        });        
     }
     //TODO: for evaluation due to Draft.js lib!
-
     deleteContainer(delete_Id, e) {
         // pure functions exercise
         if (confirm('Are you sure you want to delete this window?')) {
@@ -296,11 +291,14 @@ class MainComponent extends React.Component {
         e = e || window.event;
         e.stopPropagation();
         if (obj.description != null) {            
-            this.setState({contentPopup: Object.assign({}, {parent: obj.description[0], target: obj.description[1], data: this.state.tree[obj.description[0]], top: (e.pageY) + 'px', left:(e.pageX - 50) + 'px', width: '20vw', height: '10vh'})});
+            this.setState({contentPopup: Object.assign({}, {parent: obj.description[0], target: obj.description[1], data: this.state.tree[obj.description[0]], top: (e.pageY + 20) + 'px', left:(e.pageX - 120) + 'px'})});
         } else {
             this.setState({ editorStates: Object.assign({}, this.state.editorStates, {[obj.content]: this.state.editorStates[obj.content] == null ? Draft.EditorState.createEmpty() : this.state.editorStates[obj.content]}),
-                            contentPopup: Object.assign({}, {parent: obj.content, target: null, data: this.state.tree[obj.content], top: (e.pageY - 10) + 'px', left:(e.pageX - 250) + 'px', width: '60vw', height: '40vh'})});
+                            contentPopup: Object.assign({}, {parent: obj.content, target: null, data: this.state.tree[obj.content], top: null, left: null})});
         }
+    }
+    closeContent(e) {
+        this.setState({contentPopup: null});
     }
     // TODO: no need yet
     onKeyDown(e) {
@@ -339,8 +337,8 @@ class MainComponent extends React.Component {
                 this.setState({linePopup: null});
         } 
     }
-    onPopupOutClick(e) {
-        if (e.target.getAttribute('class') === 'container') {
+    onPopupOutClick(e) {        
+        if (e.target.getAttribute('class') === 'container' || e.target.getAttribute('class') === 'container') {
             this.setState({linePopup: null, contentPopup: null});
         }        
     }
@@ -466,9 +464,10 @@ class MainComponent extends React.Component {
               previousElementId = parseInt(this.lineElementId);
         let   newStateTree = null;
         this.connectionOn = true;
-
+        
         // IF FIRST CLICK - opening the line connection
         if (previousElementId === -1) {
+            console.log(previousElementId);
             this.lineElementId = currentElementId;
             newStateTree = Object.assign({}, this.state.tree, 
                                     {[currentElementId]: Object.assign({}, this.state.tree[currentElementId], 
@@ -476,19 +475,20 @@ class MainComponent extends React.Component {
             });
         // IF CLICKED ON THE SAME BOX AGAIN
         } else if (currentElementId === previousElementId) {
+            console.log(previousElementId);
             newStateTree = Object.assign({}, this.state.tree, 
                                     {[currentElementId]: Object.assign({}, this.state.tree[currentElementId], 
                                             {style: Object.assign({}, this.state.tree[currentElementId].style, {border: '1px solid blue'})})
             });
             this.lineElementId = -1;
         }
-        this.setState({tree: newStateTree});
+        this.setState({tree: newStateTree || this.state.tree});
     }
     completeConnection(currentElId, e) {
         
         if (this.lineElementId === -1 || parseInt(this.lineElementId) === parseInt(currentElId)) {return;}
         e = e || window.event;
-
+        
         let   newStateTree = null,
               newConnections = null;
         const parentId = parseInt(this.lineElementId),
@@ -603,16 +603,19 @@ class MainComponent extends React.Component {
             if (this.state.contentPopup) {
                 const parentId = this.state.contentPopup.parent,
                       targetId = this.state.contentPopup.target;
-                console.log(targetId);
+
                 elementsArr.push(React.createElement(ContentPopup, {key: 'contentPopup',
                                                                     data: this.state.contentPopup,
-                                                                    header: this.state.tree[ parentId ].header,
+                                                                    parentHeader: this.state.tree[ parentId ].header,
+                                                                    targetHeader: (this.state.tree[ targetId ] || {}).header || "",
                                                                     content: this.state.tree[ parentId ].content,
                                                                     description: this.state.tree[ parentId ].description[ targetId ] == null ? null : this.state.tree[ parentId ].description[ targetId ].text,
                                                                     onHeaderChange: this.onHeaderChange.bind(this, parentId, targetId),                                                                    
                                                                     onContentChange: this.onContentChange.bind(this, parentId, targetId),
                                                                     onEditorChange: this.onEditorChange.bind(this, parentId, targetId),
-                                                                    editorData: targetId == null ? this.state.editorStates[parentId] : null
+                                                                    editorData: targetId == null ? this.state.editorStates[parentId] : null,
+                                                                    clickedOn: targetId == null ? 'content' : 'description',
+                                                                    closeContent: this.closeContent.bind(this)
                                                                     }
                                                     )
                                 )
@@ -626,7 +629,7 @@ class MainComponent extends React.Component {
                                            onClick: this.onPopupOutClick.bind(this),
                                            onKeyDown: this.onKeyDown.bind(this),
                                            onContextMenu: this.rightClick.bind(this)},
-                                    React.createElement(addBtn, {addBoxContainer: this.addBoxContainer.bind(this)}, 'Add new Window'),
+                                    React.createElement(AddBtn, {addBoxContainer: this.addBoxContainer.bind(this)}, 'Add new Window'),
                                     elementsArr );
     }
 }
@@ -646,8 +649,8 @@ let storage = {
     0: {id: 0,
         parents: [],
         children: [1],
-        header:"header0", 
-        content: "option",
+        header:"chapter 1", 
+        content: "synopsis",
         style: {border: '1px solid blue'},
         position: {left: '700px', top: '50px'},
         size: {width: '120px', height: '100px'},
@@ -656,8 +659,8 @@ let storage = {
      1: {id: 1,
         parents: [0],
         children: [],
-        header:"header1", 
-        content: "option 1",
+        header:"chapter 2", 
+        content: "synopsis",
         style: {border: '1px solid blue'},
         position: {left: '978px', top: '287px'},
         size: {width: '120px', height: '100px'},
@@ -666,8 +669,8 @@ let storage = {
      2: {id: 2,
         parents: [],
         children: [],
-        header:"header2", 
-        content: "option 2",
+        header:"chapter 3", 
+        content: "synopsis",
         style: {border: '1px solid blue'},
         position: {left: '390px', top: '260px'},
         size: {width: '120px', height: '100px'},
@@ -676,8 +679,8 @@ let storage = {
      3: {id: 3,
         parents: [],
         children: [],
-        header:"header3", 
-        content: 'option 3',
+        header:"chapter 4", 
+        content: 'synopsis',
         style: {border: '1px solid blue'},
         position: {left: '250px', top: '260px'},
         size: {width: '120px', height: '100px'},

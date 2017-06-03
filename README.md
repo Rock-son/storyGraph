@@ -1,3 +1,3 @@
 # StoryGraph Project
 
-* libs used: React, ReactDOM, Immutable.js, Draft.js
+* libs used: React, ReactDOM, Draft.js (Immutable.js)
