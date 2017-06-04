@@ -76,8 +76,8 @@ const Line = function(props) {
 // HEADER
 const Header = function(props) {
     const headerStyle = {backgroundColor: 'blue', borderBottom: '1px', borderBottomColor: 'cyan', color: 'white'},
-          closeBtnStyle = {width: '17px', height: '15px', lineHeight: '8px', border: '1px outset white', color: 'white', 
-                            backgroundColor: 'red', float: 'right', paddingLeft: '3px', cursor: 'pointer'}; // if not changing, maybe put it in the style.css file
+          closeBtnStyle = {width: '17px', height: '15px', lineHeight: '8px', border: '1px outset white', color: 'white', position: 'absolute', top: '5px', right: '5px', padding: '2px', fontWeight: 700,
+                            borderRadius: '2px', backgroundColor: 'red', float: 'right', paddingLeft: '3px', cursor: 'pointer'}; // if not changing, maybe put it in the style.css file
 
     return (React.createElement('div', {className: props.className, onClick: props.completeConnection, style: headerStyle}, props.header,
                 React.createElement('div', {className: 'closeBtn', style: closeBtnStyle, onClick: props.deleteContainer}, 'x')

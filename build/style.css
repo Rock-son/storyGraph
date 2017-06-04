@@ -39,14 +39,6 @@ body {
     overflow: hidden;
     padding: 2px 0px 0px 10px;
 }
-.closeBtn {    
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    padding: 2px;
-    font-weight: 700;
-    border-radius: 2px;
-}
 .closeBtn:hover {
     cursor: default;
 }
